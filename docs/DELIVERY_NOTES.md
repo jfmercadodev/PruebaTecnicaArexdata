@@ -19,7 +19,7 @@
 ## Why pending
 
 - Current machine now reaches Docker Desktop and compose config is valid, but `docker compose up --build` still fails while pulling `mcr.microsoft.com/mssql/server:2022-latest` due a Docker Desktop local blob/input-output error in its image store.
-- Repository now has a baseline commit, but history is not yet granular enough to tell the implementation story step by step.
+- Repository now has a few focused commits, but history is not yet granular enough to tell the full implementation story step by step.
 
 ## Trade-offs accepted
 
