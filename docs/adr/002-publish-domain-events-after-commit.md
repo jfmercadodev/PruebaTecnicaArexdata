@@ -1,23 +1,23 @@
-# ADR-002: Publish Domain Events After Commit
+# ADR-002: Publicar eventos de dominio despues del commit
 
-- Status: Accepted
+- Estado: Aceptado
 - Date: 2026-05-26
 
-## Context
+## Contexto
 
-Product aggregate emits business events such as `ProductCreated` and `ProductUpdated`. Publishing before persistence completes risks side effects for data that never committed.
+El agregado `Product` emite eventos de negocio como `ProductCreated` y `ProductUpdated`. Publicarlos antes de completar la persistencia arriesga efectos secundarios sobre datos que nunca terminaron comprometidos.
 
 ## Decision
 
-Keep pending domain events inside aggregate and publish them only after successful `SaveChanges` / unit of work completion.
+Mantener los eventos de dominio pendientes dentro del agregado y publicarlos solo despues de `SaveChanges` exitoso o de completar la unidad de trabajo.
 
-## Consequences
+## Consecuencias
 
-- Event stream matches committed state.
-- Integration test can verify no publication occurs when persistence fails.
-- Simpler than a full outbox while still protecting consistency inside same process.
+- El flujo de eventos refleja el estado realmente comprometido.
+- Un test de integracion puede verificar que no hay publicacion si la persistencia falla.
+- Es mas simple que un outbox completo y aun asi protege la consistencia dentro del mismo proceso.
 
-## Alternatives considered
+## Alternativas consideradas
 
-- Publish inside aggregate methods: rejected because persistence could still fail afterward.
-- Full outbox pattern: stronger for distributed integration, but too large for this exercise scope.
+- Publicar dentro de los metodos del agregado: descartado porque la persistencia aun podria fallar despues.
+- Patron Outbox completo: mas fuerte para integraciones distribuidas, pero demasiado grande para el alcance de este ejercicio.

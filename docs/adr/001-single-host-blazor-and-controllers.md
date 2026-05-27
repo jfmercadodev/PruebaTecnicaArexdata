@@ -1,27 +1,27 @@
-# ADR-001: Single Host With Blazor Server And Controllers
+# ADR-001: Host unico con Blazor Server y Controllers
 
-- Status: Accepted
+- Estado: Aceptado
 - Date: 2026-05-26
 
-## Context
+## Contexto
 
-Technical test requires interactive UI plus HTTP contract with full controller behavior and `ProblemDetails`.
+La prueba tecnica exige una interfaz interactiva y tambien un contrato HTTP con comportamiento completo de controllers y `ProblemDetails`.
 
 ## Decision
 
-Use one ASP.NET Core host, `ProductCatalog.Web`, containing:
+Usar un unico host ASP.NET Core, `ProductCatalog.Web`, que contenga:
 
 - `Blazor Server` UI
 - MVC `Controllers`
-- shared DI graph for application and infrastructure
+- grafo de DI compartido para aplicacion e infraestructura
 
-## Consequences
+## Consecuencias
 
-- Simpler deployment and local runtime.
-- Shared logging, correlation id, exception handling, and startup/migration path.
-- UI can reuse application services directly when appropriate, while public HTTP contract remains available.
+- Despliegue y ejecucion local mas simples.
+- Logging, correlation id, manejo de excepciones y ruta de arranque/migracion compartidos.
+- La UI puede reutilizar servicios de aplicacion cuando convenga, mientras el contrato HTTP publico sigue disponible.
 
-## Alternatives considered
+## Alternativas consideradas
 
-- Separate API + separate Blazor host: cleaner deployment boundaries, but more boilerplate and more runtime moving parts for this exercise.
-- Minimal APIs: rejected because requirement explicitly asks for full controllers.
+- API separada + host Blazor separado: fronteras de despliegue mas limpias, pero mas boilerplate y mas piezas operativas para este ejercicio.
+- Minimal APIs: descartado porque el requerimiento pide explicitamente controllers completos.

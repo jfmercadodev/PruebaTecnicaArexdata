@@ -1,28 +1,28 @@
-# ADR-003: Use SQL Server In Docker For Local Runtime
+# ADR-003: Usar SQL Server en Docker para ejecucion local
 
-- Status: Accepted
+- Estado: Aceptado
 - Date: 2026-05-26
 
-## Context
+## Contexto
 
-Requirement asks for SQL Server and full dockerized solution. Local setup must be reproducible and close to expected runtime shape.
+El requerimiento pide SQL Server y una solucion completamente dockerizada. La configuracion local debe ser reproducible y parecida a la forma esperada de ejecucion.
 
 ## Decision
 
-Use SQL Server 2022 Developer container in `docker-compose.yml`, plus:
+Usar un contenedor `SQL Server 2022 Developer` en `docker-compose.yml`, junto con:
 
 - persistent Docker volume
 - healthcheck before web startup
 - environment-driven connection string
 - automatic migration + seed on application startup
 
-## Consequences
+## Consecuencias
 
-- Consistent local runtime for reviewers.
-- Fewer machine-specific differences than local DB installers.
-- Delivery depends on Docker availability for final smoke tests.
+- Entorno local consistente para quienes revisen la solucion.
+- Menos diferencias especificas de maquina que con instaladores locales de base de datos.
+- La entrega depende de la disponibilidad de Docker para los smoke tests finales.
 
-## Alternatives considered
+## Alternativas consideradas
 
-- SQLite: rejected because requirement changed to SQL Server.
-- Local machine SQL Server only: workable, but less reproducible than containerized setup.
+- SQLite: descartado porque el requerimiento cambio a SQL Server.
+- Solo SQL Server instalado en la maquina local: viable, pero menos reproducible que una configuracion con contenedores.
