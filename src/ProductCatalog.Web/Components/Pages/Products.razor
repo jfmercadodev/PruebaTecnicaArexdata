@@ -34,18 +34,13 @@
         </div>
 
         <div class="catalog-selectors">
-            <div>
+            <div class="catalog-page-size">
                 <label class="form-label" for="page-size">Tamano de pagina</label>
                 <select id="page-size" class="form-select" value="@_pageSize" @onchange="ChangePageSizeAsync">
                     <option value="5">5</option>
                     <option value="10">10</option>
                     <option value="20">20</option>
                 </select>
-            </div>
-            <div class="catalog-meta-card">
-                <span class="catalog-meta-label">Fuente</span>
-                <strong>@(_result?.Metadata?.Source ?? "Pendiente")</strong>
-                <span class="catalog-meta-foot">@(_result?.Metadata?.ElapsedMs ?? 0) ms</span>
             </div>
         </div>
     </div>
@@ -73,7 +68,7 @@
                         <th><button type="button" class="table-sort" @onclick="() => SortByAsync(nameof(ProductDto.Cost))">Costo @SortMarker(nameof(ProductDto.Cost))</button></th>
                         <th><button type="button" class="table-sort" @onclick="() => SortByAsync(nameof(ProductDto.Stock))">Stock @SortMarker(nameof(ProductDto.Stock))</button></th>
                         <th>Margen</th>
-                        <th class="text-end">Acciones</th>
+                        <th class="catalog-actions-col">Acciones</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -86,7 +81,7 @@
                             <td>@product.Cost.ToString("C")</td>
                             <td>@product.Stock</td>
                             <td>@product.MarginPercent.ToString("0.##")%</td>
-                            <td class="text-end">
+                            <td class="catalog-actions-col">
                                 <div class="table-actions">
                                     <button class="btn btn-sm btn-outline-secondary" @onclick="() => EditProduct(product.Id)">Editar</button>
                                     <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteAsync(product)" disabled="@(_isDeletingProductId == product.Id)">Eliminar</button>
