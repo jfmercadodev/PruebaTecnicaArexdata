@@ -18,7 +18,7 @@
 
 ## Why pending
 
-- Current machine does have Docker Desktop CLI, and current user belongs to `docker-users`, but Docker engine is still not reachable here. Diagnostics show `com.docker.service` stopped and current shell without elevation, so container smoke tests still cannot run here.
+- Current machine now reaches Docker Desktop and compose config is valid, but `docker compose up --build` still fails while pulling `mcr.microsoft.com/mssql/server:2022-latest` due a Docker Desktop local blob/input-output error in its image store.
 - Repository now has a baseline commit, but history is not yet granular enough to tell the implementation story step by step.
 
 ## Trade-offs accepted

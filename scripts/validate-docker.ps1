@@ -1,6 +1,10 @@
 $ErrorActionPreference = "Stop"
 Set-StrictMode -Version Latest
 
+if (Test-Path Variable:PSNativeCommandUseErrorActionPreference) {
+    $PSNativeCommandUseErrorActionPreference = $false
+}
+
 function Get-DockerCliPath {
     $dockerCommand = Get-Command docker -ErrorAction SilentlyContinue
     if ($dockerCommand) {
@@ -38,10 +42,8 @@ function Test-IsElevated {
 
 $dockerCli = Get-DockerCliPath
 
-try {
-    & $dockerCli info *> $null
-}
-catch {
+$null = & $dockerCli info *> $null
+if ($LASTEXITCODE -ne 0) {
     $serviceStatus = Get-DockerServiceStatus
     $isElevated = Test-IsElevated
     throw "Docker daemon not reachable. Service com.docker.service status: $serviceStatus. Elevated shell: $isElevated. Start Docker Desktop or service with admin privileges, then retry. CLI: $dockerCli"
@@ -51,9 +53,24 @@ $appPort = if ($env:APP_PORT) { $env:APP_PORT } else { "8080" }
 $appUrl = "http://localhost:$appPort/products"
 
 Write-Host ">> docker compose up -d --build" -ForegroundColor Cyan
-& $dockerCli compose up -d --build
+$previousErrorActionPreference = $ErrorActionPreference
+$ErrorActionPreference = "Continue"
+try {
+    $composeOutput = & $dockerCli compose up -d --build 2>&1
+    $composeExitCode = $LASTEXITCODE
+}
+finally {
+    $ErrorActionPreference = $previousErrorActionPreference
+}
+$composeOutput | Write-Host
 
-if ($LASTEXITCODE -ne 0) {
+if ($composeExitCode -ne 0) {
+    $composeText = ($composeOutput | Out-String)
+
+    if ($composeText -match "input/output error" -or $composeText -match "unable to get image") {
+        throw "docker compose up failed due Docker Desktop image/blob I/O error while pulling SQL Server image. Compose file is valid; fix local Docker image store and retry."
+    }
+
     throw "docker compose up failed."
 }
 

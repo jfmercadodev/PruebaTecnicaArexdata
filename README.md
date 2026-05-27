@@ -129,5 +129,5 @@ Delivery notes and known gaps: [docs/DELIVERY_NOTES.md](docs/DELIVERY_NOTES.md)
 
 Current blockers in this machine:
 
-- Docker Desktop CLI exists, but Docker engine is not reachable from this session. Current diagnostics point to `com.docker.service` stopped plus non-elevated shell access, so `docker compose up --build` and restart persistence smoke tests remain pending.
+- Docker Desktop now starts, and `docker compose config` is valid, but `docker compose up --build` currently fails while pulling SQL Server image because Docker Desktop reports a local blob/input-output error in its image store.
 - Git history review is still pending; repository currently has only baseline commit.

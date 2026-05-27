@@ -186,7 +186,7 @@ Estado actual de validacion:
 - `dotnet ef migrations list --project src/ProductCatalog.Infrastructure/ProductCatalog.Infrastructure.csproj --startup-project src/ProductCatalog.Web/ProductCatalog.Web.csproj --context ProductCatalog.Infrastructure.Persistence.AppDbContext --no-build` -> `20260527020801_InitialCreate`
 - `dotnet test tests/ProductCatalog.IntegrationTests/ProductCatalog.IntegrationTests.csproj --no-build --no-restore -m:1` -> 25/25 tests OK
 - `dotnet test ProductCatalog.slnx --no-build --no-restore -m:1` OK
-- `docker.exe` si existe en ruta de Docker Desktop, pero daemon/engine no esta disponible desde esta sesion; `com.docker.service` aparece detenido, shell actual no esta elevado y `validate-docker.ps1` falla en preflight de engine
+- `docker compose config` ya es valido y `validate-docker.ps1` llega hasta `compose up`, pero el pull de `mcr.microsoft.com/mssql/server:2022-latest` falla por error local de Docker Desktop sobre blob/input-output en su image store
 
 ### Fase 4 - Docker, Web, API y Blazor
 
