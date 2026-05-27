@@ -55,8 +55,17 @@ $defaultSqlServerImage = "mcr.microsoft.com/mssql/server:2022-latest"
 $localSqlServerImage = "productcatalog-sqlserver-local:2022"
 
 if (-not $env:SQL_SERVER_IMAGE) {
-    $null = & $dockerCli image inspect $defaultSqlServerImage *> $null
-    if ($LASTEXITCODE -eq 0) {
+    $previousErrorActionPreference = $ErrorActionPreference
+    $ErrorActionPreference = "Continue"
+    try {
+        $null = & $dockerCli image inspect $defaultSqlServerImage 2>$null
+        $inspectExitCode = $LASTEXITCODE
+    }
+    finally {
+        $ErrorActionPreference = $previousErrorActionPreference
+    }
+
+    if ($inspectExitCode -eq 0) {
         $null = & $dockerCli image tag $defaultSqlServerImage $localSqlServerImage 2>$null
         if ($LASTEXITCODE -eq 0) {
             $env:SQL_SERVER_IMAGE = $localSqlServerImage

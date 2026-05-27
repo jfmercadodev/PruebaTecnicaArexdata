@@ -221,8 +221,8 @@ Estado actual de validacion:
 - [x] `F4-20` Implementar `CustomErrorBoundary`
 - [x] `F4-21` En `Development`, mostrar detalle tecnico; en `Production`, mensaje amigable + correlacion
 - [x] `F4-22` Si API responde `ProblemDetails`, leer `title` para UI y `detail` solo en `Development`
-- [ ] `F4-23` Verificar conectividad real app -> SQL Server dentro de Docker
-- [ ] `F4-24` Verificar persistencia tras reinicio de contenedores
+- [x] `F4-23` Verificar conectividad real app -> SQL Server dentro de Docker
+- [x] `F4-24` Verificar persistencia tras reinicio de contenedores
 
 Criterio de salida: app navegable, errores consistentes, UX cumple enunciado.
 
@@ -235,6 +235,9 @@ Estado actual de validacion:
 - Cobertura web validada para `ProblemDetails`, CRUD, `sku-exists`, tabla de rutas, `CorrelationId`, paginas `/products`, `/products/new`, `/products/{id}/edit` y generacion de header
 - UI ahora consume contrato compartido de `ProblemDetails`: muestra `title` siempre y `detail` solo en `Development`
 - `tests/ProductCatalog.Specs` ahora ejecuta 17 escenarios de aceptacion alineados a `BDD-XXX`, incluyendo validacion asincrona de SKU y `CustomErrorBoundary`
+- `docker compose up -d --build` validado en Docker Desktop local el `2026-05-27`: `sqlserver` llega a `healthy`, `web` arranca, aplica migraciones, ejecuta seeder y `/products` responde `200`
+- Persistencia Docker validada el `2026-05-27`: se creo producto con SKU `PERSIST-1779886794`, se ejecuto `docker compose down` seguido de `docker compose up -d --build`, y `/api/products/sku-exists?sku=PERSIST-1779886794` devolvio `true`
+- Se corrigio inicializacion de base para reintentar al arrancar con volumen existente cuando SQL Server aun esta recuperando `ProductCatalogDb`
 
 ### Fase 5 - Calidad y evidencia
 
@@ -250,8 +253,8 @@ Estado actual de validacion:
 - [x] `F5-10` Documentar items no implementados y por que
 - [x] `F5-11` Crear `docs/adr/` con 3 ADRs minimos
 - [x] `F5-12` Crear archivo `.http` para probar API
-- [ ] `F5-13` Probar `docker compose up --build` con seeder y UI accesible
-- [ ] `F5-14` Probar reinicio completo con volumen persistente de SQL Server
+- [x] `F5-13` Probar `docker compose up --build` con seeder y UI accesible
+- [x] `F5-14` Probar reinicio completo con volumen persistente de SQL Server
 - [x] `F5-15` Dejar documentado flujo alterno local con `dotnet run` usando misma base o connection string equivalente
 - [ ] `F5-16` Revisar historial de commits para que sea atomico y descriptivo
 

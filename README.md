@@ -139,5 +139,10 @@ Delivery notes and known gaps: [docs/DELIVERY_NOTES.md](docs/DELIVERY_NOTES.md)
 
 Current blockers in this machine:
 
-- Docker Desktop now starts, and `docker compose config` is valid, but `docker compose up --build` currently fails while pulling SQL Server image because Docker Desktop reports a local blob/input-output error in its image store.
 - Git history review is still pending; repository now has a few focused commits, but the full implementation story is not yet granular enough.
+
+Latest Docker verification on this machine, performed on `2026-05-27`:
+
+- `docker compose up -d --build` completed successfully.
+- `sqlserver` reached `healthy`, `web` applied migrations, and `/products` responded `200`.
+- Persistence across restart was verified with SKU `PERSIST-1779886794`; after `docker compose down` and `docker compose up -d --build`, `/api/products/sku-exists?sku=PERSIST-1779886794` returned `true`.
