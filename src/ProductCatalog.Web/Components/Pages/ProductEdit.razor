@@ -1,0 +1,167 @@
+@page "/products/{ProductId:guid}/edit"
+@inject ProductCatalogFacade CatalogFacade
+@inject NavigationManager NavigationManager
+
+<PageTitle>Edit Product</PageTitle>
+
+<section class="editor-shell">
+    <div class="editor-header">
+        <div>
+            <p class="catalog-kicker">Update workflow</p>
+            <h1>Edit product</h1>
+            <p class="catalog-summary">Name and SKU stay locked. Price pair and stock shift move through command handler with atomic rollback protection.</p>
+        </div>
+        <a class="btn btn-outline-secondary" href="/products">Back to catalog</a>
+    </div>
+
+    @if (_isLoading)
+    {
+        <div class="catalog-empty-state">Loading product...</div>
+    }
+    else if (_notFoundProblem is not null)
+    {
+        <ProblemDetailsAlert Value="_notFoundProblem" CssClass="alert-warning" />
+    }
+    else if (_editContext is not null)
+    {
+        <ProblemDetailsAlert Value="_globalProblem" />
+
+        <div class="editor-grid">
+            <div class="editor-card">
+                <EditForm EditContext="_editContext" OnValidSubmit="HandleSubmitAsync" FormName="edit-product">
+                    <DataAnnotationsValidator />
+                    <ValidationSummary class="validation-summary" />
+
+                    <div class="readonly-pair">
+                        <div class="readonly-card">
+                            <span class="catalog-meta-label">Name</span>
+                            <strong>@_model.Name</strong>
+                        </div>
+                        <div class="readonly-card">
+                            <span class="catalog-meta-label">SKU</span>
+                            <strong>@_model.Sku</strong>
+                        </div>
+                    </div>
+
+                    <div class="editor-dual">
+                        <div class="mb-3">
+                            <label class="form-label" for="edit-sale-price">Sale price</label>
+                            <InputNumber id="edit-sale-price" class="form-control" @bind-Value="_model.SalePrice" />
+                            <ValidationMessage For="() => _model.SalePrice" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label" for="edit-cost">Cost</label>
+                            <InputNumber id="edit-cost" class="form-control" @bind-Value="_model.Cost" />
+                            <ValidationMessage For="() => _model.Cost" />
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label" for="edit-stock">Stock</label>
+                        <InputNumber id="edit-stock" class="form-control" @bind-Value="_model.Stock" />
+                        <ValidationMessage For="() => _model.Stock" />
+                    </div>
+
+                    <div class="editor-actions">
+                        <button class="btn btn-primary" type="submit" disabled="@(!CanSubmit)">Save changes</button>
+                        <button class="btn btn-outline-secondary" type="button" @onclick="Cancel">Cancel</button>
+                    </div>
+                </EditForm>
+            </div>
+
+            <aside class="editor-sidecard">
+                <span class="catalog-meta-label">Change snapshot</span>
+                <ul>
+                    <li>Original sale: @_originalProduct?.SalePrice.ToString("C")</li>
+                    <li>Original cost: @_originalProduct?.Cost.ToString("C")</li>
+                    <li>Original stock: @_originalProduct?.Stock</li>
+                    <li>Delta after save: @(StockDelta >= 0 ? $"+{StockDelta}" : StockDelta.ToString())</li>
+                </ul>
+            </aside>
+        </div>
+    }
+</section>
+
+@code {
+    [Parameter]
+    public Guid ProductId { get; set; }
+
+    private ProductDto? _originalProduct;
+    private ProductEditorModel _model = new();
+    private EditContext? _editContext;
+    private bool _isLoading = true;
+    private bool _isSubmitting;
+    private ProblemDetails? _globalProblem;
+    private ProblemDetails? _notFoundProblem;
+
+    private bool CanSubmit => !_isSubmitting && _editContext is not null && HasChanges() && !HasValidationErrors();
+    private int StockDelta => _originalProduct is null ? 0 : _model.Stock - _originalProduct.Stock;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _isLoading = true;
+        _globalProblem = null;
+        _notFoundProblem = null;
+
+        try
+        {
+            _originalProduct = await CatalogFacade.GetProductByIdAsync(ProductId);
+            _model = ProductEditorModel.FromProduct(_originalProduct);
+            _editContext = new EditContext(_model);
+        }
+        catch (CatalogProblemDetailsException exception)
+        {
+            _notFoundProblem = exception.ProblemDetails;
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task HandleSubmitAsync()
+    {
+        if (_originalProduct is null || _editContext is null || !HasChanges())
+        {
+            return;
+        }
+
+        _globalProblem = null;
+        _isSubmitting = true;
+
+        try
+        {
+            await CatalogFacade.UpdateProductAsync(ProductId, _model, _originalProduct, Guid.NewGuid());
+            NavigationManager.NavigateTo("/products?saved=updated");
+        }
+        catch (CatalogProblemDetailsException exception)
+        {
+            _globalProblem = exception.ProblemDetails;
+        }
+        finally
+        {
+            _isSubmitting = false;
+        }
+    }
+
+    private bool HasChanges()
+    {
+        return _originalProduct is not null &&
+               (_model.SalePrice != _originalProduct.SalePrice ||
+                _model.Cost != _originalProduct.Cost ||
+                _model.Stock != _originalProduct.Stock);
+    }
+
+    private bool HasValidationErrors()
+    {
+        var validationContext = new ValidationContext(_model);
+        var validationResults = new List<ValidationResult>();
+        return !Validator.TryValidateObject(_model, validationContext, validationResults, true);
+    }
+
+    private void Cancel()
+    {
+        NavigationManager.NavigateTo("/products");
+    }
+}

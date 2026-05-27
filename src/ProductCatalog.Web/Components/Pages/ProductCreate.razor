@@ -1,0 +1,217 @@
+@page "/products/new"
+@implements IDisposable
+@inject ProductCatalogFacade CatalogFacade
+@inject NavigationManager NavigationManager
+
+<PageTitle>Create Product</PageTitle>
+
+<section class="editor-shell">
+    <div class="editor-header">
+        <div>
+            <p class="catalog-kicker">Create workflow</p>
+            <h1>Create product</h1>
+            <p class="catalog-summary">Field validation runs in browser, SKU uniqueness checks after debounce and submit only unlocks when form becomes valid.</p>
+        </div>
+        <a class="btn btn-outline-secondary" href="/products">Back to catalog</a>
+    </div>
+
+    <ProblemDetailsAlert Value="_globalProblem" />
+
+    <div class="editor-grid">
+        <div class="editor-card">
+            <EditForm EditContext="_editContext" OnValidSubmit="HandleSubmitAsync" FormName="create-product">
+                <DataAnnotationsValidator />
+                <ValidationSummary class="validation-summary" />
+
+                <div class="mb-3">
+                    <label class="form-label" for="name">Product name</label>
+                    <InputText id="name" class="form-control" @bind-Value="_model.Name" />
+                    <ValidationMessage For="() => _model.Name" />
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label" for="sku">SKU</label>
+                    <InputText id="sku" class="form-control" @bind-Value="_model.Sku" />
+                    @if (_isValidatingSku)
+                    {
+                        <div class="field-note">Checking SKU availability...</div>
+                    }
+                    <ValidationMessage For="() => _model.Sku" />
+                </div>
+
+                <div class="editor-dual">
+                    <div class="mb-3">
+                        <label class="form-label" for="sale-price">Sale price</label>
+                        <InputNumber id="sale-price" class="form-control" @bind-Value="_model.SalePrice" />
+                        <ValidationMessage For="() => _model.SalePrice" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label" for="cost">Cost</label>
+                        <InputNumber id="cost" class="form-control" @bind-Value="_model.Cost" />
+                        <ValidationMessage For="() => _model.Cost" />
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label" for="stock">Initial stock</label>
+                    <InputNumber id="stock" class="form-control" @bind-Value="_model.Stock" />
+                    <ValidationMessage For="() => _model.Stock" />
+                </div>
+
+                <div class="editor-actions">
+                    <button class="btn btn-primary" type="submit" disabled="@(!CanSubmit)">Create product</button>
+                    <button class="btn btn-outline-secondary" type="button" @onclick="Cancel">Cancel</button>
+                </div>
+            </EditForm>
+        </div>
+
+        <aside class="editor-sidecard">
+            <span class="catalog-meta-label">Rules in play</span>
+            <ul>
+                <li>Name between 3 and 200 chars</li>
+                <li>SKU required and unique</li>
+                <li>Sale price and cost must be positive</li>
+                <li>Stock cannot be negative</li>
+            </ul>
+        </aside>
+    </div>
+</section>
+
+@code {
+    private readonly ProductEditorModel _model = new();
+    private EditContext _editContext = default!;
+    private ValidationMessageStore _messageStore = default!;
+    private CancellationTokenSource? _skuValidationCts;
+    private bool _isSubmitting;
+    private bool _isValidatingSku;
+    private bool _hasAsyncSkuError;
+    private ProblemDetails? _globalProblem;
+
+    private bool CanSubmit => !_isSubmitting && !_isValidatingSku && !HasValidationErrors();
+
+    protected override void OnInitialized()
+    {
+        _editContext = new EditContext(_model);
+        _messageStore = new ValidationMessageStore(_editContext);
+        _editContext.OnFieldChanged += HandleFieldChanged;
+    }
+
+    public void Dispose()
+    {
+        _editContext.OnFieldChanged -= HandleFieldChanged;
+        _skuValidationCts?.Cancel();
+        _skuValidationCts?.Dispose();
+    }
+
+    private async void HandleFieldChanged(object? sender, FieldChangedEventArgs args)
+    {
+        _globalProblem = null;
+
+        if (args.FieldIdentifier.FieldName == nameof(ProductEditorModel.Sku))
+        {
+            await ValidateSkuAsync();
+        }
+        else
+        {
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private async Task ValidateSkuAsync()
+    {
+        _skuValidationCts?.Cancel();
+        _skuValidationCts?.Dispose();
+        _skuValidationCts = new CancellationTokenSource();
+
+        var token = _skuValidationCts.Token;
+        var field = _editContext.Field(nameof(ProductEditorModel.Sku));
+        _messageStore.Clear(field);
+        _hasAsyncSkuError = false;
+
+        if (string.IsNullOrWhiteSpace(_model.Sku))
+        {
+            _editContext.NotifyValidationStateChanged();
+            await InvokeAsync(StateHasChanged);
+            return;
+        }
+
+        _isValidatingSku = true;
+        await InvokeAsync(StateHasChanged);
+
+        try
+        {
+            await Task.Delay(350, token);
+            var result = await CatalogFacade.CheckSkuExistsAsync(_model.Sku, token);
+            if (result.Exists)
+            {
+                _messageStore.Add(field, "SKU already exists.");
+                _hasAsyncSkuError = true;
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            return;
+        }
+        catch (CatalogProblemDetailsException exception)
+        {
+            _messageStore.Add(field, ProblemMessage(exception.ProblemDetails));
+            _hasAsyncSkuError = true;
+        }
+        finally
+        {
+            if (!token.IsCancellationRequested)
+            {
+                _isValidatingSku = false;
+                _editContext.NotifyValidationStateChanged();
+                await InvokeAsync(StateHasChanged);
+            }
+        }
+    }
+
+    private async Task HandleSubmitAsync()
+    {
+        _globalProblem = null;
+
+        if (_isValidatingSku || HasValidationErrors())
+        {
+            return;
+        }
+
+        _isSubmitting = true;
+
+        try
+        {
+            await CatalogFacade.CreateProductAsync(_model, Guid.NewGuid());
+            NavigationManager.NavigateTo("/products?saved=created");
+        }
+        catch (CatalogProblemDetailsException exception)
+        {
+            _globalProblem = exception.ProblemDetails;
+        }
+        finally
+        {
+            _isSubmitting = false;
+        }
+    }
+
+    private bool HasValidationErrors()
+    {
+        var validationContext = new ValidationContext(_model);
+        var validationResults = new List<ValidationResult>();
+        var modelInvalid = !Validator.TryValidateObject(_model, validationContext, validationResults, true);
+        return modelInvalid || _hasAsyncSkuError;
+    }
+
+    private static string ProblemMessage(ProblemDetails problemDetails)
+    {
+        return string.IsNullOrWhiteSpace(problemDetails.Detail)
+            ? problemDetails.Title ?? "Unexpected error"
+            : problemDetails.Detail;
+    }
+
+    private void Cancel()
+    {
+        NavigationManager.NavigateTo("/products");
+    }
+}

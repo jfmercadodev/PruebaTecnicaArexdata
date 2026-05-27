@@ -1,0 +1,83 @@
+$ErrorActionPreference = "Stop"
+Set-StrictMode -Version Latest
+
+function Get-DockerCliPath {
+    $dockerCommand = Get-Command docker -ErrorAction SilentlyContinue
+    if ($dockerCommand) {
+        return $dockerCommand.Source
+    }
+
+    $knownPaths = @(
+        "C:\Program Files\Docker\Docker\resources\bin\docker.exe",
+        "C:\Program Files\Docker\Docker\resources\docker.exe"
+    )
+
+    foreach ($path in $knownPaths) {
+        if (Test-Path $path) {
+            return $path
+        }
+    }
+
+    throw "Docker CLI not found. Install Docker Desktop first."
+}
+
+function Get-DockerServiceStatus {
+    $service = Get-Service com.docker.service -ErrorAction SilentlyContinue
+    if (-not $service) {
+        return "missing"
+    }
+
+    return $service.Status.ToString()
+}
+
+function Test-IsElevated {
+    $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
+    $principal = [Security.Principal.WindowsPrincipal]::new($identity)
+    return $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+}
+
+$dockerCli = Get-DockerCliPath
+
+try {
+    & $dockerCli info *> $null
+}
+catch {
+    $serviceStatus = Get-DockerServiceStatus
+    $isElevated = Test-IsElevated
+    throw "Docker daemon not reachable. Service com.docker.service status: $serviceStatus. Elevated shell: $isElevated. Start Docker Desktop or service with admin privileges, then retry. CLI: $dockerCli"
+}
+
+$appPort = if ($env:APP_PORT) { $env:APP_PORT } else { "8080" }
+$appUrl = "http://localhost:$appPort/products"
+
+Write-Host ">> docker compose up -d --build" -ForegroundColor Cyan
+& $dockerCli compose up -d --build
+
+if ($LASTEXITCODE -ne 0) {
+    throw "docker compose up failed."
+}
+
+$deadline = (Get-Date).AddMinutes(2)
+$healthy = $false
+
+while ((Get-Date) -lt $deadline) {
+    try {
+        $response = Invoke-WebRequest -Uri $appUrl -UseBasicParsing -TimeoutSec 10
+        if ($response.StatusCode -eq 200) {
+            $healthy = $true
+            break
+        }
+    }
+    catch {
+        Start-Sleep -Seconds 5
+    }
+}
+
+Write-Host ">> docker compose ps" -ForegroundColor Cyan
+& $dockerCli compose ps
+
+if (-not $healthy) {
+    throw "App not reachable at $appUrl after compose startup."
+}
+
+Write-Host "Docker validation finished OK. App reachable at $appUrl" -ForegroundColor Green

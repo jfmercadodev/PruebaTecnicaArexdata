@@ -1,0 +1,11 @@
+**/bin/
+**/obj/
+.git/
+.github/
+.vs/
+.vscode/
+TestResults/
+artifacts/
+docker-compose.override.yml
+.env
+README.md

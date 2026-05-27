@@ -1,0 +1,45 @@
+@using System.Text.Json
+@using Microsoft.AspNetCore.Mvc
+
+@if (Value is not null)
+{
+    <div class="alert @CssClass" role="alert">
+        <strong>@Value.Title</strong>
+
+        @if (!string.IsNullOrWhiteSpace(Value.Detail))
+        {
+            <div>@Value.Detail</div>
+        }
+
+        @if (!string.IsNullOrWhiteSpace(CorrelationId))
+        {
+            <div class="problem-correlation">Correlation: @CorrelationId</div>
+        }
+    </div>
+}
+
+@code {
+    [Parameter]
+    public ProblemDetails? Value { get; set; }
+
+    [Parameter]
+    public string CssClass { get; set; } = "alert-danger";
+
+    private string? CorrelationId
+    {
+        get
+        {
+            if (Value is null || !Value.Extensions.TryGetValue("correlationId", out var correlationId))
+            {
+                return null;
+            }
+
+            return correlationId switch
+            {
+                string value => value,
+                JsonElement element when element.ValueKind == JsonValueKind.String => element.GetString(),
+                _ => correlationId?.ToString()
+            };
+        }
+    }
+}

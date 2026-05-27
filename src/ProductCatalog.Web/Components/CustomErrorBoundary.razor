@@ -1,0 +1,50 @@
+@using System.Diagnostics
+@inject IHostEnvironment HostEnvironment
+
+<ErrorBoundary @ref="_errorBoundary">
+    <ChildContent>
+        @ChildContent
+    </ChildContent>
+    <ErrorContent Context="exception">
+        <section class="boundary-shell" role="alert">
+            <p class="catalog-kicker">UI recovery</p>
+            <h1>Screen failed</h1>
+
+            @if (HostEnvironment.IsDevelopment())
+            {
+                <p class="boundary-message">@exception.Message</p>
+                <pre class="boundary-detail">@exception</pre>
+            }
+            else
+            {
+                <p class="boundary-message">Something broke while rendering this screen. Retry or return to catalog.</p>
+                <p class="boundary-correlation">Correlation: @CorrelationId</p>
+            }
+
+            <div class="editor-actions">
+                <button class="btn btn-primary" type="button" @onclick="Recover">Retry</button>
+                <a class="btn btn-outline-secondary" href="/products">Open catalog</a>
+            </div>
+        </section>
+    </ErrorContent>
+</ErrorBoundary>
+
+@code {
+    [Parameter]
+    [EditorRequired]
+    public RenderFragment ChildContent { get; set; } = default!;
+
+    [CascadingParameter]
+    private HttpContext? HttpContext { get; set; }
+
+    private ErrorBoundary? _errorBoundary;
+
+    private string CorrelationId => Activity.Current?.Id
+        ?? HttpContext?.TraceIdentifier
+        ?? "n/a";
+
+    private void Recover()
+    {
+        _errorBoundary?.Recover();
+    }
+}

@@ -1,0 +1,269 @@
+@page "/products"
+@inject ProductCatalogFacade CatalogFacade
+@inject NavigationManager NavigationManager
+@inject IJSRuntime JsRuntime
+
+<PageTitle>Products</PageTitle>
+
+<section class="catalog-shell">
+    <div class="catalog-header">
+        <div>
+            <p class="catalog-kicker">Catalog operations</p>
+            <h1>Products</h1>
+            <p class="catalog-summary">Live list backed by CQRS query metadata. Filter, sort, paginate, edit and remove products from one panel.</p>
+        </div>
+        <div class="catalog-actions">
+            <a class="btn btn-primary" href="/products/new">New product</a>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(_feedbackMessage))
+    {
+        <div class="alert alert-success" role="status">@_feedbackMessage</div>
+    }
+
+    <ProblemDetailsAlert Value="_problemDetails" />
+
+    <div class="catalog-toolbar">
+        <div class="catalog-search">
+            <label class="form-label" for="product-search">Search by name or SKU</label>
+            <div class="input-group">
+                <input id="product-search" class="form-control" @bind="_searchTerm" @bind:event="oninput" placeholder="Type keyboard, dock, api-..." />
+                <button class="btn btn-outline-secondary" @onclick="SearchAsync" disabled="@_isLoading">Search</button>
+            </div>
+        </div>
+
+        <div class="catalog-selectors">
+            <div>
+                <label class="form-label" for="page-size">Page size</label>
+                <select id="page-size" class="form-select" value="@_pageSize" @onchange="ChangePageSizeAsync">
+                    <option value="5">5</option>
+                    <option value="10">10</option>
+                    <option value="20">20</option>
+                </select>
+            </div>
+            <div class="catalog-meta-card">
+                <span class="catalog-meta-label">Source</span>
+                <strong>@(_result?.Metadata?.Source ?? "Pending")</strong>
+                <span class="catalog-meta-foot">@(_result?.Metadata?.ElapsedMs ?? 0) ms</span>
+            </div>
+        </div>
+    </div>
+
+    @if (_isLoading)
+    {
+        <div class="catalog-empty-state">Loading products...</div>
+    }
+    else if (_result is null || _result.Items.Count == 0)
+    {
+        <div class="catalog-empty-state">
+            <h2>No products found</h2>
+            <p>Adjust search term or seed more products.</p>
+        </div>
+    }
+    else
+    {
+        <div class="catalog-table-shell">
+            <table class="table catalog-table">
+                <thead>
+                    <tr>
+                        <th><button type="button" class="table-sort" @onclick="() => SortByAsync(nameof(ProductDto.Name))">Name @SortMarker(nameof(ProductDto.Name))</button></th>
+                        <th><button type="button" class="table-sort" @onclick="() => SortByAsync(nameof(ProductDto.Sku))">SKU @SortMarker(nameof(ProductDto.Sku))</button></th>
+                        <th><button type="button" class="table-sort" @onclick="() => SortByAsync(nameof(ProductDto.SalePrice))">Sale @SortMarker(nameof(ProductDto.SalePrice))</button></th>
+                        <th><button type="button" class="table-sort" @onclick="() => SortByAsync(nameof(ProductDto.Cost))">Cost @SortMarker(nameof(ProductDto.Cost))</button></th>
+                        <th><button type="button" class="table-sort" @onclick="() => SortByAsync(nameof(ProductDto.Stock))">Stock @SortMarker(nameof(ProductDto.Stock))</button></th>
+                        <th>Margin</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var product in _result.Items)
+                    {
+                        <tr>
+                            <td><div class="product-name">@product.Name</div></td>
+                            <td><span class="sku-badge">@product.Sku</span></td>
+                            <td>@product.SalePrice.ToString("C")</td>
+                            <td>@product.Cost.ToString("C")</td>
+                            <td>@product.Stock</td>
+                            <td>@product.MarginPercent.ToString("0.##")%</td>
+                            <td class="text-end">
+                                <div class="table-actions">
+                                    <button class="btn btn-sm btn-outline-secondary" @onclick="() => EditProduct(product.Id)">Edit</button>
+                                    <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteAsync(product)" disabled="@(_isDeletingProductId == product.Id)">Delete</button>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <div class="catalog-footer">
+            <div class="catalog-pager-summary">
+                Showing page @_pageNumber of @TotalPages. Total products: @_result.TotalCount.
+            </div>
+            <div class="catalog-pager-actions">
+                <button class="btn btn-outline-secondary" @onclick="PreviousPageAsync" disabled="@(_pageNumber <= 1 || _isLoading)">Previous</button>
+                <button class="btn btn-outline-secondary" @onclick="NextPageAsync" disabled="@(_pageNumber >= TotalPages || _isLoading)">Next</button>
+            </div>
+        </div>
+    }
+</section>
+
+@code {
+    private PagedResult<ProductDto>? _result;
+    private ProblemDetails? _problemDetails;
+    private string? _searchTerm;
+    private string? _feedbackMessage;
+    private bool _isLoading;
+    private int _pageNumber = 1;
+    private int _pageSize = 10;
+    private string _sortField = nameof(ProductDto.Name);
+    private SortDirection _sortDirection = SortDirection.Asc;
+    private Guid? _isDeletingProductId;
+
+    private int TotalPages => _result is null || _result.TotalCount == 0
+        ? 1
+        : (int)Math.Ceiling(_result.TotalCount / (double)_pageSize);
+
+    protected override async Task OnInitializedAsync()
+    {
+        var uri = NavigationManager.ToAbsoluteUri(NavigationManager.Uri);
+        if (Microsoft.AspNetCore.WebUtilities.QueryHelpers.ParseQuery(uri.Query).TryGetValue("saved", out var savedValues))
+        {
+            _feedbackMessage = savedValues.FirstOrDefault() switch
+            {
+                "created" => "Product created successfully.",
+                "updated" => "Product updated successfully.",
+                _ => null
+            };
+        }
+
+        await LoadProductsAsync();
+    }
+
+    private async Task LoadProductsAsync()
+    {
+        _isLoading = true;
+        _problemDetails = null;
+
+        try
+        {
+            _result = await CatalogFacade.GetProductsAsync(
+                _pageNumber,
+                _pageSize,
+                _sortField,
+                _sortDirection,
+                _searchTerm);
+        }
+        catch (CatalogProblemDetailsException exception)
+        {
+            _problemDetails = exception.ProblemDetails;
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task SearchAsync()
+    {
+        _pageNumber = 1;
+        await LoadProductsAsync();
+    }
+
+    private async Task ChangePageSizeAsync(ChangeEventArgs args)
+    {
+        if (int.TryParse(args.Value?.ToString(), out var pageSize))
+        {
+            _pageSize = pageSize;
+            _pageNumber = 1;
+            await LoadProductsAsync();
+        }
+    }
+
+    private async Task SortByAsync(string fieldName)
+    {
+        if (_sortField == fieldName)
+        {
+            _sortDirection = _sortDirection == SortDirection.Asc ? SortDirection.Desc : SortDirection.Asc;
+        }
+        else
+        {
+            _sortField = fieldName;
+            _sortDirection = SortDirection.Asc;
+        }
+
+        await LoadProductsAsync();
+    }
+
+    private async Task PreviousPageAsync()
+    {
+        if (_pageNumber <= 1)
+        {
+            return;
+        }
+
+        _pageNumber--;
+        await LoadProductsAsync();
+    }
+
+    private async Task NextPageAsync()
+    {
+        if (_pageNumber >= TotalPages)
+        {
+            return;
+        }
+
+        _pageNumber++;
+        await LoadProductsAsync();
+    }
+
+    private void EditProduct(Guid productId)
+    {
+        NavigationManager.NavigateTo($"/products/{productId:D}/edit");
+    }
+
+    private string SortMarker(string fieldName)
+    {
+        if (_sortField != fieldName)
+        {
+            return string.Empty;
+        }
+
+        return _sortDirection == SortDirection.Asc ? "^" : "v";
+    }
+
+    private async Task DeleteAsync(ProductDto product)
+    {
+        var confirmed = await JsRuntime.InvokeAsync<bool>("confirm", $"Delete '{product.Name}'?");
+        if (!confirmed)
+        {
+            return;
+        }
+
+        _isDeletingProductId = product.Id;
+        _problemDetails = null;
+
+        try
+        {
+            await CatalogFacade.DeleteProductAsync(product.Id, Guid.NewGuid());
+            _feedbackMessage = $"Product '{product.Name}' deleted.";
+
+            if (_result is not null && _result.Items.Count == 1 && _pageNumber > 1)
+            {
+                _pageNumber--;
+            }
+
+            await LoadProductsAsync();
+        }
+        catch (CatalogProblemDetailsException exception)
+        {
+            _problemDetails = exception.ProblemDetails;
+        }
+        finally
+        {
+            _isDeletingProductId = null;
+        }
+    }
+}
