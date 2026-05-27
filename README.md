@@ -130,4 +130,4 @@ Delivery notes and known gaps: [docs/DELIVERY_NOTES.md](docs/DELIVERY_NOTES.md)
 Current blockers in this machine:
 
 - Docker Desktop CLI exists, but Docker engine is not reachable from this session. Current diagnostics point to `com.docker.service` stopped plus non-elevated shell access, so `docker compose up --build` and restart persistence smoke tests remain pending.
-- Git history review is pending until commits are created.
+- Git history review is still pending; repository currently has only baseline commit.
