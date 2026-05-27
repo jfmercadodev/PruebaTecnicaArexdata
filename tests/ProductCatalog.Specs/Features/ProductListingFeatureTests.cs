@@ -55,7 +55,7 @@ public sealed class ProductListingFeatureTests
 
         Assert.NotNull(first);
         Assert.NotNull(second);
-        Assert.Equal("Database", first!.Metadata!.Source);
+        Assert.Equal("Base de datos", first!.Metadata!.Source);
         Assert.Equal("Cache", second!.Metadata!.Source);
         Assert.True(second.Metadata.ElapsedMs >= 0);
     }
@@ -87,6 +87,6 @@ public sealed class ProductListingFeatureTests
         Assert.NotNull(cached);
         Assert.NotNull(afterWrite);
         Assert.Equal("Cache", cached!.Metadata!.Source);
-        Assert.Equal("Database", afterWrite!.Metadata!.Source);
+        Assert.Equal("Base de datos", afterWrite!.Metadata!.Source);
     }
 }

@@ -6,7 +6,9 @@ using ProductCatalog.Infrastructure.DependencyInjection;
 using ProductCatalog.Infrastructure.Monitoring;
 using ProductCatalog.Infrastructure.Startup;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Localization;
 using Serilog;
+using System.Globalization;
 
 namespace ProductCatalog.Web;
 
@@ -28,7 +30,7 @@ public class Program
 
         if (string.IsNullOrWhiteSpace(connectionString))
         {
-            throw new InvalidOperationException("Connection string 'DefaultConnection' is required.");
+            throw new InvalidOperationException("La cadena de conexion 'DefaultConnection' es obligatoria.");
         }
 
         // Add services to the container.
@@ -51,7 +53,8 @@ public class Program
                     var problemDetails = new ValidationProblemDetails(context.ModelState)
                     {
                         Status = StatusCodes.Status400BadRequest,
-                        Title = "Validation failed",
+                        Title = "Validacion fallida",
+                        Detail = "Revisa los datos enviados y corrige los campos resaltados.",
                         Type = "https://httpstatuses.com/400",
                         Instance = context.HttpContext.Request.Path
                     };
@@ -68,10 +71,20 @@ public class Program
         builder.Services.AddRazorComponents()
             .AddInteractiveServerComponents();
 
+        var supportedCultures = new[] { new CultureInfo("es-CO") };
+        builder.Services.Configure<RequestLocalizationOptions>(options =>
+        {
+            options.DefaultRequestCulture = new RequestCulture("es-CO");
+            options.SupportedCultures = supportedCultures;
+            options.SupportedUICultures = supportedCultures;
+            options.ApplyCurrentCultureToResponseHeaders = true;
+        });
+
         var app = builder.Build();
         await app.Services.InitializeCatalogDatabaseAsync();
 
         // Configure the HTTP request pipeline.
+        app.UseRequestLocalization();
         app.UseMiddleware<CorrelationIdMiddleware>();
         app.UseSerilogRequestLogging();
         app.UseMiddleware<GlobalExceptionHandlingMiddleware>();

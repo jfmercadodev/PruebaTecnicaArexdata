@@ -1,5 +1,6 @@
 @using System.Text.Json
 @using Microsoft.AspNetCore.Mvc
+@using ProductCatalog.Web.Services
 
 @if (Value is not null)
 {
@@ -8,12 +9,12 @@
 
         @if (!string.IsNullOrWhiteSpace(Value.Detail))
         {
-            <div>@Value.Detail</div>
+            <div>@ProblemDetailsMessageFormatter.ToUserMessage(Value)</div>
         }
 
         @if (!string.IsNullOrWhiteSpace(CorrelationId))
         {
-            <div class="problem-correlation">Correlation: @CorrelationId</div>
+            <div class="problem-correlation">ID de correlacion: @CorrelationId</div>
         }
     </div>
 }

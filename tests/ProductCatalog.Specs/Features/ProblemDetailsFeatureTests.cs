@@ -30,7 +30,7 @@ public sealed class ProblemDetailsFeatureTests
 
         Assert.Equal(HttpStatusCode.UnprocessableEntity, response.StatusCode);
         Assert.NotNull(problem);
-        Assert.Equal("Invalid price", problem!.Title);
+        Assert.Equal("Precio invalido", problem!.Title);
     }
 
     [Fact(DisplayName = "BDD-013 Return 404 for missing product")]
@@ -45,7 +45,7 @@ public sealed class ProblemDetailsFeatureTests
 
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
         Assert.NotNull(problem);
-        Assert.Equal("Product not found", problem!.Title);
+        Assert.Equal("Producto no encontrado", problem!.Title);
     }
 
     [Fact(DisplayName = "BDD-014 Return 400 for validation error")]
@@ -70,7 +70,7 @@ public sealed class ProblemDetailsFeatureTests
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         Assert.NotNull(problem);
-        Assert.Equal("Validation failed", problem!.Title);
+        Assert.Equal("Validacion fallida", problem!.Title);
     }
 
     [Fact(DisplayName = "BDD-019 Propagate correlation id through response and errors")]

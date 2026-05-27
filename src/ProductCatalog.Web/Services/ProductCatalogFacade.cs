@@ -84,6 +84,8 @@ public sealed class ProductCatalogFacade
             () => _sender.Send(
                 new UpdateProductCommand(
                     productId,
+                    model.Name != originalProduct.Name ? model.Name : null,
+                    model.Sku != originalProduct.Sku ? model.Sku : null,
                     salePriceChanged || costChanged ? model.SalePrice : null,
                     salePriceChanged || costChanged ? model.Cost : null,
                     stockDelta != 0 ? stockDelta : null,

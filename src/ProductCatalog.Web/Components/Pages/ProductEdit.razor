@@ -1,22 +1,23 @@
 @page "/products/{ProductId:guid}/edit"
+@implements IDisposable
 @inject ProductCatalogFacade CatalogFacade
 @inject NavigationManager NavigationManager
 
-<PageTitle>Edit Product</PageTitle>
+<PageTitle>Editar producto</PageTitle>
 
 <section class="editor-shell">
     <div class="editor-header">
         <div>
-            <p class="catalog-kicker">Update workflow</p>
-            <h1>Edit product</h1>
-            <p class="catalog-summary">Name and SKU stay locked. Price pair and stock shift move through command handler with atomic rollback protection.</p>
+            <p class="catalog-kicker">Flujo de actualizacion</p>
+            <h1>Editar producto</h1>
+            <p class="catalog-summary">Nombre y SKU quedan bloqueados. Precio y stock se actualizan mediante el handler con proteccion atomica ante rollback.</p>
         </div>
-        <a class="btn btn-outline-secondary" href="/products">Back to catalog</a>
+        <a class="btn btn-outline-secondary" href="/products">Volver al catalogo</a>
     </div>
 
     @if (_isLoading)
     {
-        <div class="catalog-empty-state">Loading product...</div>
+        <div class="catalog-empty-state">Cargando producto...</div>
     }
     else if (_notFoundProblem is not null)
     {
@@ -32,26 +33,33 @@
                     <DataAnnotationsValidator />
                     <ValidationSummary class="validation-summary" />
 
-                    <div class="readonly-pair">
-                        <div class="readonly-card">
-                            <span class="catalog-meta-label">Name</span>
-                            <strong>@_model.Name</strong>
+                    <div class="editor-dual">
+                        <div class="mb-3">
+                            <label class="form-label" for="edit-name">Nombre del producto</label>
+                            <InputText id="edit-name" class="form-control" @bind-Value="_model.Name" />
+                            <ValidationMessage For="() => _model.Name" />
                         </div>
-                        <div class="readonly-card">
-                            <span class="catalog-meta-label">SKU</span>
-                            <strong>@_model.Sku</strong>
+
+                        <div class="mb-3">
+                            <label class="form-label" for="edit-sku">SKU</label>
+                            <InputText id="edit-sku" class="form-control" @bind-Value="_model.Sku" />
+                            @if (_isValidatingSku)
+                            {
+                                <div class="field-note">Verificando disponibilidad del SKU...</div>
+                            }
+                            <ValidationMessage For="() => _model.Sku" />
                         </div>
                     </div>
 
                     <div class="editor-dual">
                         <div class="mb-3">
-                            <label class="form-label" for="edit-sale-price">Sale price</label>
+                        <label class="form-label" for="edit-sale-price">Precio de venta</label>
                             <InputNumber id="edit-sale-price" class="form-control" @bind-Value="_model.SalePrice" />
                             <ValidationMessage For="() => _model.SalePrice" />
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label" for="edit-cost">Cost</label>
+                            <label class="form-label" for="edit-cost">Costo</label>
                             <InputNumber id="edit-cost" class="form-control" @bind-Value="_model.Cost" />
                             <ValidationMessage For="() => _model.Cost" />
                         </div>
@@ -64,19 +72,19 @@
                     </div>
 
                     <div class="editor-actions">
-                        <button class="btn btn-primary" type="submit" disabled="@(!CanSubmit)">Save changes</button>
-                        <button class="btn btn-outline-secondary" type="button" @onclick="Cancel">Cancel</button>
+                        <button class="btn btn-primary" type="submit" disabled="@(!CanSubmit)">Guardar cambios</button>
+                        <button class="btn btn-outline-secondary" type="button" @onclick="Cancel">Cancelar</button>
                     </div>
                 </EditForm>
             </div>
 
             <aside class="editor-sidecard">
-                <span class="catalog-meta-label">Change snapshot</span>
+                <span class="catalog-meta-label">Resumen de cambios</span>
                 <ul>
-                    <li>Original sale: @_originalProduct?.SalePrice.ToString("C")</li>
-                    <li>Original cost: @_originalProduct?.Cost.ToString("C")</li>
-                    <li>Original stock: @_originalProduct?.Stock</li>
-                    <li>Delta after save: @(StockDelta >= 0 ? $"+{StockDelta}" : StockDelta.ToString())</li>
+                    <li>Venta original: @_originalProduct?.SalePrice.ToString("C")</li>
+                    <li>Costo original: @_originalProduct?.Cost.ToString("C")</li>
+                    <li>Stock original: @_originalProduct?.Stock</li>
+                    <li>Delta despues de guardar: @(StockDelta >= 0 ? $"+{StockDelta}" : StockDelta.ToString())</li>
                 </ul>
             </aside>
         </div>
@@ -90,25 +98,40 @@
     private ProductDto? _originalProduct;
     private ProductEditorModel _model = new();
     private EditContext? _editContext;
+    private ValidationMessageStore? _messageStore;
+    private CancellationTokenSource? _skuValidationCts;
     private bool _isLoading = true;
     private bool _isSubmitting;
+    private bool _isValidatingSku;
+    private bool _hasAsyncSkuError;
     private ProblemDetails? _globalProblem;
     private ProblemDetails? _notFoundProblem;
 
-    private bool CanSubmit => !_isSubmitting && _editContext is not null && HasChanges() && !HasValidationErrors();
+    private bool CanSubmit => !_isSubmitting && !_isValidatingSku && _editContext is not null && HasChanges() && !HasValidationErrors();
     private int StockDelta => _originalProduct is null ? 0 : _model.Stock - _originalProduct.Stock;
+
+    public void Dispose()
+    {
+        DetachEditContext();
+        _skuValidationCts?.Cancel();
+        _skuValidationCts?.Dispose();
+    }
 
     protected override async Task OnParametersSetAsync()
     {
         _isLoading = true;
         _globalProblem = null;
         _notFoundProblem = null;
+        _hasAsyncSkuError = false;
+        DetachEditContext();
 
         try
         {
             _originalProduct = await CatalogFacade.GetProductByIdAsync(ProductId);
             _model = ProductEditorModel.FromProduct(_originalProduct);
             _editContext = new EditContext(_model);
+            _messageStore = new ValidationMessageStore(_editContext);
+            _editContext.OnFieldChanged += HandleFieldChanged;
         }
         catch (CatalogProblemDetailsException exception)
         {
@@ -120,9 +143,79 @@
         }
     }
 
+    private async void HandleFieldChanged(object? sender, FieldChangedEventArgs args)
+    {
+        _globalProblem = null;
+
+        if (args.FieldIdentifier.FieldName == nameof(ProductEditorModel.Sku))
+        {
+            await ValidateSkuAsync();
+        }
+        else
+        {
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private async Task ValidateSkuAsync()
+    {
+        if (_editContext is null || _messageStore is null || _originalProduct is null)
+        {
+            return;
+        }
+
+        _skuValidationCts?.Cancel();
+        _skuValidationCts?.Dispose();
+        _skuValidationCts = new CancellationTokenSource();
+
+        var token = _skuValidationCts.Token;
+        var field = _editContext.Field(nameof(ProductEditorModel.Sku));
+        _messageStore.Clear(field);
+        _hasAsyncSkuError = false;
+
+        if (string.IsNullOrWhiteSpace(_model.Sku))
+        {
+            _editContext.NotifyValidationStateChanged();
+            await InvokeAsync(StateHasChanged);
+            return;
+        }
+
+        _isValidatingSku = true;
+        await InvokeAsync(StateHasChanged);
+
+        try
+        {
+            await Task.Delay(350, token);
+            var result = await CatalogFacade.CheckSkuExistsAsync(_model.Sku, token);
+            if (result.Exists && !string.Equals(result.Sku, _originalProduct.Sku, StringComparison.Ordinal))
+            {
+                _messageStore.Add(field, "El SKU ya existe.");
+                _hasAsyncSkuError = true;
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            return;
+        }
+        catch (CatalogProblemDetailsException exception)
+        {
+            _messageStore.Add(field, ProblemDetailsMessageFormatter.ToUserMessage(exception.ProblemDetails));
+            _hasAsyncSkuError = true;
+        }
+        finally
+        {
+            if (!token.IsCancellationRequested)
+            {
+                _isValidatingSku = false;
+                _editContext.NotifyValidationStateChanged();
+                await InvokeAsync(StateHasChanged);
+            }
+        }
+    }
+
     private async Task HandleSubmitAsync()
     {
-        if (_originalProduct is null || _editContext is null || !HasChanges())
+        if (_originalProduct is null || _editContext is null || !HasChanges() || _isValidatingSku || HasValidationErrors())
         {
             return;
         }
@@ -148,7 +241,9 @@
     private bool HasChanges()
     {
         return _originalProduct is not null &&
-               (_model.SalePrice != _originalProduct.SalePrice ||
+               (_model.Name != _originalProduct.Name ||
+                _model.Sku != _originalProduct.Sku ||
+                _model.SalePrice != _originalProduct.SalePrice ||
                 _model.Cost != _originalProduct.Cost ||
                 _model.Stock != _originalProduct.Stock);
     }
@@ -157,7 +252,15 @@
     {
         var validationContext = new ValidationContext(_model);
         var validationResults = new List<ValidationResult>();
-        return !Validator.TryValidateObject(_model, validationContext, validationResults, true);
+        return !Validator.TryValidateObject(_model, validationContext, validationResults, true) || _hasAsyncSkuError;
+    }
+
+    private void DetachEditContext()
+    {
+        if (_editContext is not null)
+        {
+            _editContext.OnFieldChanged -= HandleFieldChanged;
+        }
     }
 
     private void Cancel()

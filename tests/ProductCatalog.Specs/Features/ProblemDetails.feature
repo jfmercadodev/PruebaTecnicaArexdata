@@ -6,19 +6,19 @@ Feature: Problem details and controllers
     When client sends create product request with sale price 40 and cost 55
     Then response status code is 422
     And response content type is "application/problem+json"
-    And response body title contains "Invalid price"
+    And response body title contains "Precio invalido"
 
   Scenario: BDD-013 Return 404 for missing product
     Given products controller is available
     When client requests product detail for unknown id
     Then response status code is 404
-    And response body title contains "Product not found"
+    And response body title contains "Producto no encontrado"
 
   Scenario: BDD-014 Return 400 for validation error
     Given products controller is available
     When client sends create product request with empty name and empty sku
     Then response status code is 400
-    And response body title contains "Validation failed"
+    And response body title contains "Validacion fallida"
 
   Scenario: BDD-015 Expose controller endpoints without minimal APIs
     Given application starts
@@ -45,7 +45,7 @@ Feature: Problem details and controllers
     Then boundary shows friendly message and correlation id
 
   Scenario: BDD-025 Read API problem title in UI and expose detail only in Development
-    Given API operation fails with problem title "Product not found"
+    Given API operation fails with problem title "Producto no encontrado"
     And problem detail text exists in backend exception
     When Blazor page renders error banner
     Then UI shows problem title

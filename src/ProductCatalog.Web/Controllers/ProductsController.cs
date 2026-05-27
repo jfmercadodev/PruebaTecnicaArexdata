@@ -75,6 +75,8 @@ public sealed class ProductsController : ControllerBase
         var response = await _sender.Send(
             new UpdateProductCommand(
                 id,
+                request.Name,
+                request.Sku,
                 request.SalePrice,
                 request.Cost,
                 request.StockDelta,

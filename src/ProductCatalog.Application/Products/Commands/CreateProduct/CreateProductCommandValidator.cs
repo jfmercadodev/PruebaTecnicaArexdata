@@ -15,7 +15,7 @@ public sealed class CreateProductCommandValidator : AbstractValidator<CreateProd
             .Cascade(CascadeMode.Stop)
             .NotEmpty()
             .Must(BeValidSku)
-            .WithMessage("SKU format is invalid.")
+            .WithMessage("El formato del SKU es invalido.")
             .Length(3, 50);
 
         RuleFor(command => command.SalePrice)

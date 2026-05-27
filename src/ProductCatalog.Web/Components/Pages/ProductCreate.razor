@@ -2,17 +2,18 @@
 @implements IDisposable
 @inject ProductCatalogFacade CatalogFacade
 @inject NavigationManager NavigationManager
+@using ProductCatalog.Web.Services
 
-<PageTitle>Create Product</PageTitle>
+<PageTitle>Crear producto</PageTitle>
 
 <section class="editor-shell">
     <div class="editor-header">
         <div>
-            <p class="catalog-kicker">Create workflow</p>
-            <h1>Create product</h1>
-            <p class="catalog-summary">Field validation runs in browser, SKU uniqueness checks after debounce and submit only unlocks when form becomes valid.</p>
+            <p class="catalog-kicker">Flujo de creacion</p>
+            <h1>Crear producto</h1>
+            <p class="catalog-summary">La validacion corre en navegador, la unicidad del SKU se revisa con debounce y el envio solo se habilita cuando el formulario es valido.</p>
         </div>
-        <a class="btn btn-outline-secondary" href="/products">Back to catalog</a>
+        <a class="btn btn-outline-secondary" href="/products">Volver al catalogo</a>
     </div>
 
     <ProblemDetailsAlert Value="_globalProblem" />
@@ -24,7 +25,7 @@
                 <ValidationSummary class="validation-summary" />
 
                 <div class="mb-3">
-                    <label class="form-label" for="name">Product name</label>
+                    <label class="form-label" for="name">Nombre del producto</label>
                     <InputText id="name" class="form-control" @bind-Value="_model.Name" />
                     <ValidationMessage For="() => _model.Name" />
                 </div>
@@ -34,45 +35,45 @@
                     <InputText id="sku" class="form-control" @bind-Value="_model.Sku" />
                     @if (_isValidatingSku)
                     {
-                        <div class="field-note">Checking SKU availability...</div>
+                        <div class="field-note">Verificando disponibilidad del SKU...</div>
                     }
                     <ValidationMessage For="() => _model.Sku" />
                 </div>
 
                 <div class="editor-dual">
                     <div class="mb-3">
-                        <label class="form-label" for="sale-price">Sale price</label>
+                        <label class="form-label" for="sale-price">Precio de venta</label>
                         <InputNumber id="sale-price" class="form-control" @bind-Value="_model.SalePrice" />
                         <ValidationMessage For="() => _model.SalePrice" />
                     </div>
 
                     <div class="mb-3">
-                        <label class="form-label" for="cost">Cost</label>
+                        <label class="form-label" for="cost">Costo</label>
                         <InputNumber id="cost" class="form-control" @bind-Value="_model.Cost" />
                         <ValidationMessage For="() => _model.Cost" />
                     </div>
                 </div>
 
                 <div class="mb-4">
-                    <label class="form-label" for="stock">Initial stock</label>
+                    <label class="form-label" for="stock">Stock inicial</label>
                     <InputNumber id="stock" class="form-control" @bind-Value="_model.Stock" />
                     <ValidationMessage For="() => _model.Stock" />
                 </div>
 
                 <div class="editor-actions">
-                    <button class="btn btn-primary" type="submit" disabled="@(!CanSubmit)">Create product</button>
-                    <button class="btn btn-outline-secondary" type="button" @onclick="Cancel">Cancel</button>
+                    <button class="btn btn-primary" type="submit" disabled="@(!CanSubmit)">Crear producto</button>
+                    <button class="btn btn-outline-secondary" type="button" @onclick="Cancel">Cancelar</button>
                 </div>
             </EditForm>
         </div>
 
         <aside class="editor-sidecard">
-            <span class="catalog-meta-label">Rules in play</span>
+            <span class="catalog-meta-label">Reglas activas</span>
             <ul>
-                <li>Name between 3 and 200 chars</li>
-                <li>SKU required and unique</li>
-                <li>Sale price and cost must be positive</li>
-                <li>Stock cannot be negative</li>
+                <li>Nombre entre 3 y 200 caracteres</li>
+                <li>SKU obligatorio y unico</li>
+                <li>Precio de venta y costo mayores que cero</li>
+                <li>Stock no negativo</li>
             </ul>
         </aside>
     </div>
@@ -145,7 +146,7 @@
             var result = await CatalogFacade.CheckSkuExistsAsync(_model.Sku, token);
             if (result.Exists)
             {
-                _messageStore.Add(field, "SKU already exists.");
+                _messageStore.Add(field, "El SKU ya existe.");
                 _hasAsyncSkuError = true;
             }
         }
@@ -205,9 +206,7 @@
 
     private static string ProblemMessage(ProblemDetails problemDetails)
     {
-        return string.IsNullOrWhiteSpace(problemDetails.Detail)
-            ? problemDetails.Title ?? "Unexpected error"
-            : problemDetails.Detail;
+        return ProblemDetailsMessageFormatter.ToUserMessage(problemDetails);
     }
 
     private void Cancel()

@@ -16,10 +16,10 @@ public sealed class CatalogProblemDetailsFactoryTests
         var problemDetails = factory.CreateForException(
             "/api/products/123",
             "trace-dev",
-            new NotFoundException("Product '123' was not found."));
+            new NotFoundException("No se encontro el producto '123'."));
 
-        problemDetails.Title.Should().Be("Product not found");
-        problemDetails.Detail.Should().Be("Product '123' was not found.");
+        problemDetails.Title.Should().Be("Producto no encontrado");
+        problemDetails.Detail.Should().Be("No se encontro el producto '123'.");
         ReadExtension(problemDetails, "correlationId").Should().Be("trace-dev");
     }
 
@@ -31,10 +31,10 @@ public sealed class CatalogProblemDetailsFactoryTests
         var problemDetails = factory.CreateForException(
             "/api/products/123",
             "trace-prod",
-            new NotFoundException("Product '123' was not found."));
+            new NotFoundException("No se encontro el producto '123'."));
 
-        problemDetails.Title.Should().Be("Product not found");
-        problemDetails.Detail.Should().BeNull();
+        problemDetails.Title.Should().Be("Producto no encontrado");
+        problemDetails.Detail.Should().Be("No se encontro el producto solicitado.");
         ReadExtension(problemDetails, "correlationId").Should().Be("trace-prod");
     }
 

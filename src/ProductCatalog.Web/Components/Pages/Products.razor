@@ -3,17 +3,17 @@
 @inject NavigationManager NavigationManager
 @inject IJSRuntime JsRuntime
 
-<PageTitle>Products</PageTitle>
+<PageTitle>Productos</PageTitle>
 
 <section class="catalog-shell">
     <div class="catalog-header">
         <div>
-            <p class="catalog-kicker">Catalog operations</p>
-            <h1>Products</h1>
-            <p class="catalog-summary">Live list backed by CQRS query metadata. Filter, sort, paginate, edit and remove products from one panel.</p>
+            <p class="catalog-kicker">Operaciones de catalogo</p>
+            <h1>Productos</h1>
+            <p class="catalog-summary">Listado en vivo con metadatos CQRS. Filtra, ordena, pagina, edita y elimina productos desde un solo panel.</p>
         </div>
         <div class="catalog-actions">
-            <a class="btn btn-primary" href="/products/new">New product</a>
+            <a class="btn btn-primary" href="/products/new">Nuevo producto</a>
         </div>
     </div>
 
@@ -26,16 +26,16 @@
 
     <div class="catalog-toolbar">
         <div class="catalog-search">
-            <label class="form-label" for="product-search">Search by name or SKU</label>
+            <label class="form-label" for="product-search">Buscar por nombre o SKU</label>
             <div class="input-group">
-                <input id="product-search" class="form-control" @bind="_searchTerm" @bind:event="oninput" placeholder="Type keyboard, dock, api-..." />
-                <button class="btn btn-outline-secondary" @onclick="SearchAsync" disabled="@_isLoading">Search</button>
+                <input id="product-search" class="form-control" @bind="_searchTerm" @bind:event="oninput" placeholder="Escribe teclado, dock, api-..." />
+                <button class="btn btn-outline-secondary" @onclick="SearchAsync" disabled="@_isLoading">Buscar</button>
             </div>
         </div>
 
         <div class="catalog-selectors">
             <div>
-                <label class="form-label" for="page-size">Page size</label>
+                <label class="form-label" for="page-size">Tamano de pagina</label>
                 <select id="page-size" class="form-select" value="@_pageSize" @onchange="ChangePageSizeAsync">
                     <option value="5">5</option>
                     <option value="10">10</option>
@@ -43,8 +43,8 @@
                 </select>
             </div>
             <div class="catalog-meta-card">
-                <span class="catalog-meta-label">Source</span>
-                <strong>@(_result?.Metadata?.Source ?? "Pending")</strong>
+                <span class="catalog-meta-label">Fuente</span>
+                <strong>@(_result?.Metadata?.Source ?? "Pendiente")</strong>
                 <span class="catalog-meta-foot">@(_result?.Metadata?.ElapsedMs ?? 0) ms</span>
             </div>
         </div>
@@ -52,13 +52,13 @@
 
     @if (_isLoading)
     {
-        <div class="catalog-empty-state">Loading products...</div>
+        <div class="catalog-empty-state">Cargando productos...</div>
     }
     else if (_result is null || _result.Items.Count == 0)
     {
         <div class="catalog-empty-state">
-            <h2>No products found</h2>
-            <p>Adjust search term or seed more products.</p>
+            <h2>No se encontraron productos</h2>
+            <p>Ajusta el termino de busqueda o carga mas productos.</p>
         </div>
     }
     else
@@ -67,13 +67,13 @@
             <table class="table catalog-table">
                 <thead>
                     <tr>
-                        <th><button type="button" class="table-sort" @onclick="() => SortByAsync(nameof(ProductDto.Name))">Name @SortMarker(nameof(ProductDto.Name))</button></th>
+                        <th><button type="button" class="table-sort" @onclick="() => SortByAsync(nameof(ProductDto.Name))">Nombre @SortMarker(nameof(ProductDto.Name))</button></th>
                         <th><button type="button" class="table-sort" @onclick="() => SortByAsync(nameof(ProductDto.Sku))">SKU @SortMarker(nameof(ProductDto.Sku))</button></th>
-                        <th><button type="button" class="table-sort" @onclick="() => SortByAsync(nameof(ProductDto.SalePrice))">Sale @SortMarker(nameof(ProductDto.SalePrice))</button></th>
-                        <th><button type="button" class="table-sort" @onclick="() => SortByAsync(nameof(ProductDto.Cost))">Cost @SortMarker(nameof(ProductDto.Cost))</button></th>
+                        <th><button type="button" class="table-sort" @onclick="() => SortByAsync(nameof(ProductDto.SalePrice))">Venta @SortMarker(nameof(ProductDto.SalePrice))</button></th>
+                        <th><button type="button" class="table-sort" @onclick="() => SortByAsync(nameof(ProductDto.Cost))">Costo @SortMarker(nameof(ProductDto.Cost))</button></th>
                         <th><button type="button" class="table-sort" @onclick="() => SortByAsync(nameof(ProductDto.Stock))">Stock @SortMarker(nameof(ProductDto.Stock))</button></th>
-                        <th>Margin</th>
-                        <th class="text-end">Actions</th>
+                        <th>Margen</th>
+                        <th class="text-end">Acciones</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -88,8 +88,8 @@
                             <td>@product.MarginPercent.ToString("0.##")%</td>
                             <td class="text-end">
                                 <div class="table-actions">
-                                    <button class="btn btn-sm btn-outline-secondary" @onclick="() => EditProduct(product.Id)">Edit</button>
-                                    <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteAsync(product)" disabled="@(_isDeletingProductId == product.Id)">Delete</button>
+                                    <button class="btn btn-sm btn-outline-secondary" @onclick="() => EditProduct(product.Id)">Editar</button>
+                                    <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteAsync(product)" disabled="@(_isDeletingProductId == product.Id)">Eliminar</button>
                                 </div>
                             </td>
                         </tr>
@@ -100,11 +100,11 @@
 
         <div class="catalog-footer">
             <div class="catalog-pager-summary">
-                Showing page @_pageNumber of @TotalPages. Total products: @_result.TotalCount.
+                Mostrando pagina @_pageNumber de @TotalPages. Total de productos: @_result.TotalCount.
             </div>
             <div class="catalog-pager-actions">
-                <button class="btn btn-outline-secondary" @onclick="PreviousPageAsync" disabled="@(_pageNumber <= 1 || _isLoading)">Previous</button>
-                <button class="btn btn-outline-secondary" @onclick="NextPageAsync" disabled="@(_pageNumber >= TotalPages || _isLoading)">Next</button>
+                <button class="btn btn-outline-secondary" @onclick="PreviousPageAsync" disabled="@(_pageNumber <= 1 || _isLoading)">Anterior</button>
+                <button class="btn btn-outline-secondary" @onclick="NextPageAsync" disabled="@(_pageNumber >= TotalPages || _isLoading)">Siguiente</button>
             </div>
         </div>
     }
@@ -133,8 +133,8 @@
         {
             _feedbackMessage = savedValues.FirstOrDefault() switch
             {
-                "created" => "Product created successfully.",
-                "updated" => "Product updated successfully.",
+                "created" => "Producto creado correctamente.",
+                "updated" => "Producto actualizado correctamente.",
                 _ => null
             };
         }
@@ -236,7 +236,7 @@
 
     private async Task DeleteAsync(ProductDto product)
     {
-        var confirmed = await JsRuntime.InvokeAsync<bool>("confirm", $"Delete '{product.Name}'?");
+        var confirmed = await JsRuntime.InvokeAsync<bool>("confirm", $"¿Eliminar '{product.Name}'?");
         if (!confirmed)
         {
             return;
@@ -248,7 +248,7 @@
         try
         {
             await CatalogFacade.DeleteProductAsync(product.Id, Guid.NewGuid());
-            _feedbackMessage = $"Product '{product.Name}' deleted.";
+            _feedbackMessage = $"Producto '{product.Name}' eliminado.";
 
             if (_result is not null && _result.Items.Count == 1 && _pageNumber > 1)
             {

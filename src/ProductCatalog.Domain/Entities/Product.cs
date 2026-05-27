@@ -61,6 +61,33 @@ public sealed class Product : AggregateRoot<Guid>
         RegisterUpdatedEvent();
     }
 
+    public void Rename(string name)
+    {
+        ValidateName(name);
+
+        var trimmedName = name.Trim();
+        if (Name == trimmedName)
+        {
+            return;
+        }
+
+        Name = trimmedName;
+        RegisterUpdatedEvent();
+    }
+
+    public void ChangeSku(Sku sku)
+    {
+        ArgumentNullException.ThrowIfNull(sku);
+
+        if (Sku == sku)
+        {
+            return;
+        }
+
+        Sku = sku;
+        RegisterUpdatedEvent();
+    }
+
     public void AdjustStock(int delta)
     {
         var newStock = Stock + delta;
@@ -91,13 +118,13 @@ public sealed class Product : AggregateRoot<Guid>
     {
         if (string.IsNullOrWhiteSpace(name))
         {
-            throw new InvalidProductNameException("Product name cannot be empty.");
+            throw new InvalidProductNameException("El nombre del producto no puede estar vacio.");
         }
 
         var trimmed = name.Trim();
         if (trimmed.Length is < 3 or > 200)
         {
-            throw new InvalidProductNameException("Product name length must be between 3 and 200 characters.");
+            throw new InvalidProductNameException("El nombre del producto debe tener entre 3 y 200 caracteres.");
         }
     }
 

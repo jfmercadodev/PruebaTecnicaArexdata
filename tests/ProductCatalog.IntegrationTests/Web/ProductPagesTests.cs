@@ -13,10 +13,10 @@ public sealed class ProductPagesTests
 
         var html = await client.GetStringAsync("/products");
 
-        html.Should().Contain("Products");
-        html.Should().Contain("Search by name or SKU");
-        html.Should().Contain("Source");
-        html.Should().MatchRegex("Database|Cache");
+        html.Should().Contain("Productos");
+        html.Should().Contain("Buscar por nombre o SKU");
+        html.Should().Contain("Fuente");
+        html.Should().MatchRegex("Base de datos|Cache");
     }
 
     [Fact]
@@ -27,9 +27,9 @@ public sealed class ProductPagesTests
 
         var html = await client.GetStringAsync("/products/new");
 
-        html.Should().Contain("Create product");
-        html.Should().Contain("Field validation runs in browser");
-        html.Should().Contain("SKU required and unique");
+        html.Should().Contain("Crear producto");
+        html.Should().Contain("La validacion corre en navegador");
+        html.Should().Contain("SKU obligatorio y unico");
     }
 
     [Fact]
@@ -56,9 +56,11 @@ public sealed class ProductPagesTests
 
         var html = await client.GetStringAsync($"/products/{created!.Id:D}/edit");
 
-        html.Should().Contain("Edit product");
+        html.Should().Contain("Editar producto");
         html.Should().Contain("Edit Screen Product");
-        html.Should().Contain("Original stock");
+        html.Should().Contain("edit-name");
+        html.Should().Contain("edit-sku");
+        html.Should().Contain("Stock original");
     }
 
     [Fact]
@@ -70,7 +72,7 @@ public sealed class ProductPagesTests
 
         var html = await client.GetStringAsync($"/products/{missingId:D}/edit");
 
-        html.Should().Contain("Product not found");
-        html.Should().NotContain($"Product '{missingId:D}' was not found.");
+        html.Should().Contain("Producto no encontrado");
+        html.Should().NotContain($"No se encontro el producto '{missingId:D}'.");
     }
 }

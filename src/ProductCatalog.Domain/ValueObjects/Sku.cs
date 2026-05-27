@@ -16,7 +16,7 @@ public sealed partial record Sku
     {
         if (string.IsNullOrWhiteSpace(value))
         {
-            throw new InvalidSkuException("SKU cannot be empty.");
+            throw new InvalidSkuException("El SKU no puede estar vacio.");
         }
 
         var normalized = value.Trim().ToUpperInvariant();
@@ -31,12 +31,12 @@ public sealed partial record Sku
 
         if (normalized.Length is < 3 or > 50)
         {
-            throw new InvalidSkuException("SKU length must be between 3 and 50 characters.");
+            throw new InvalidSkuException("El SKU debe tener entre 3 y 50 caracteres.");
         }
 
         if (!AllowedCharactersRegex().IsMatch(normalized))
         {
-            throw new InvalidSkuException("SKU only allows alphanumeric characters and hyphens.");
+            throw new InvalidSkuException("El SKU solo permite caracteres alfanumericos y guiones.");
         }
 
         return new Sku(normalized);

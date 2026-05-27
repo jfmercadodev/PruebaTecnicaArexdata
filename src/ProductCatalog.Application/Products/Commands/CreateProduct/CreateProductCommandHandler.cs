@@ -51,7 +51,7 @@ public sealed class CreateProductCommandHandler : IRequestHandler<CreateProductC
         var sku = Sku.Create(request.Sku);
         if (await _productReadRepository.ExistsBySkuAsync(sku, cancellationToken))
         {
-            throw new ConflictException($"Product with SKU '{sku.Value}' already exists.");
+            throw new ConflictException($"Ya existe un producto con el SKU '{sku.Value}'.");
         }
 
         var product = Product.Create(

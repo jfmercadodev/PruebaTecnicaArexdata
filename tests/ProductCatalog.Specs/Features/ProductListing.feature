@@ -29,5 +29,5 @@ Feature: Product listing
     Given seeded catalog exists
     When user opens page "/products"
     Then page shows search input and paged table
-    And page shows metadata source "Database" or "Cache"
+    And page shows metadata source "Base de datos" or "Cache"
     And page shows elapsed response time in ms

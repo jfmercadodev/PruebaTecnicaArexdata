@@ -32,5 +32,5 @@ Feature: Product creation
     When user opens page "/products/new"
     And user types sku "mkb-001"
     And debounce window of 350 ms completes
-    Then page shows validation message "SKU already exists."
+    Then page shows validation message "El SKU ya existe."
     And create submit remains disabled until form becomes valid

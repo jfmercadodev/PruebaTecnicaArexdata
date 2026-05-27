@@ -40,7 +40,7 @@ public sealed class CachingBehavior<TRequest, TResponse> : IPipelineBehavior<TRe
         }
 
         var elapsedOnMiss = (long)(DateTime.UtcNow - startedAt).TotalMilliseconds;
-        var responseWithMetadata = metadataAwareResponse.WithMetadata(new QueryMetadata(false, "Database", elapsedOnMiss));
+        var responseWithMetadata = metadataAwareResponse.WithMetadata(new QueryMetadata(false, "Base de datos", elapsedOnMiss));
         await _queryCache.SetAsync(cacheableQuery.CacheKey, responseWithMetadata, cacheableQuery.Ttl, cancellationToken);
         return responseWithMetadata;
     }

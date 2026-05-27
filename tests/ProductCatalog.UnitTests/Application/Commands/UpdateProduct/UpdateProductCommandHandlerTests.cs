@@ -1,4 +1,5 @@
 using ProductCatalog.Application.Products.Commands.UpdateProduct;
+using ProductCatalog.Application.Common.Exceptions;
 using ProductCatalog.Domain.Entities;
 using ProductCatalog.Domain.Events;
 using ProductCatalog.Domain.Exceptions;
@@ -12,11 +13,13 @@ public sealed class UpdateProductCommandHandlerTests
     public async Task Handle_ShouldUpdateProduct_AndPublishSingleUpdatedEvent()
     {
         var product = CreatePersistedProduct();
+        var readRepository = new InMemoryProductReadRepository();
         var writeRepository = new InMemoryProductWriteRepository(product);
         var unitOfWork = new FakeUnitOfWork();
         var eventPublisher = new FakeDomainEventPublisher();
         var cacheInvalidationService = new FakeCacheInvalidationService();
         var handler = new UpdateProductCommandHandler(
+            readRepository,
             writeRepository,
             unitOfWork,
             eventPublisher,
@@ -25,9 +28,11 @@ public sealed class UpdateProductCommandHandlerTests
             MapperFactory.Create());
 
         var response = await handler.Handle(
-            new UpdateProductCommand(product.Id, 135m, 80m, -2),
+            new UpdateProductCommand(product.Id, "Mechanical Keyboard Pro", "MKB-010", 135m, 80m, -2),
             CancellationToken.None);
 
+        response.Name.Should().Be("Mechanical Keyboard Pro");
+        response.Sku.Should().Be("MKB-010");
         response.SalePrice.Should().Be(135m);
         response.Cost.Should().Be(80m);
         response.Stock.Should().Be(13);
@@ -40,11 +45,13 @@ public sealed class UpdateProductCommandHandlerTests
     public async Task Handle_ShouldRollback_WhenCompositeUpdateFails()
     {
         var product = CreatePersistedProduct();
+        var readRepository = new InMemoryProductReadRepository();
         var writeRepository = new InMemoryProductWriteRepository(product);
         var unitOfWork = new FakeUnitOfWork();
         var eventPublisher = new FakeDomainEventPublisher();
         var cacheInvalidationService = new FakeCacheInvalidationService();
         var handler = new UpdateProductCommandHandler(
+            readRepository,
             writeRepository,
             unitOfWork,
             eventPublisher,
@@ -53,16 +60,41 @@ public sealed class UpdateProductCommandHandlerTests
             MapperFactory.Create());
 
         var action = async () => await handler.Handle(
-            new UpdateProductCommand(product.Id, 60m, 80m, -4),
+            new UpdateProductCommand(product.Id, "Broken Update", null, 60m, 80m, -4),
             CancellationToken.None);
 
         await action.Should().ThrowAsync<InvalidPriceException>();
         product.SalePrice.Value.Should().Be(120m);
         product.Cost.Value.Should().Be(70m);
         product.Stock.Should().Be(15);
+        product.Name.Should().Be("Mechanical Keyboard");
         cacheInvalidationService.InvalidatedPrefixes.Should().BeEmpty();
         unitOfWork.SaveCalls.Should().Be(0);
         eventPublisher.PublishedEvents.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task Handle_ShouldRejectDuplicateSku_WhenSkuBelongsToAnotherProduct()
+    {
+        var product = CreatePersistedProduct();
+        var readRepository = new InMemoryProductReadRepository();
+        readRepository.Seed("DUP-001");
+        var writeRepository = new InMemoryProductWriteRepository(product);
+        var handler = new UpdateProductCommandHandler(
+            readRepository,
+            writeRepository,
+            new FakeUnitOfWork(),
+            new FakeDomainEventPublisher(),
+            new FakeIdempotencyStore(),
+            new FakeCacheInvalidationService(),
+            MapperFactory.Create());
+
+        var action = async () => await handler.Handle(
+            new UpdateProductCommand(product.Id, null, "dup-001", null, null, null),
+            CancellationToken.None);
+
+        await action.Should().ThrowAsync<ConflictException>();
+        product.Sku.Value.Should().Be("MKB-001");
     }
 
     private static Product CreatePersistedProduct()

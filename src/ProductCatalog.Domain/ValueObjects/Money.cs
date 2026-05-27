@@ -15,12 +15,12 @@ public readonly record struct Money
     {
         if (value < 0)
         {
-            throw new InvalidMoneyException($"Money value '{value}' cannot be negative.");
+            throw new InvalidMoneyException($"El valor monetario '{value}' no puede ser negativo.");
         }
 
         if (GetScale(value) > 4)
         {
-            throw new InvalidMoneyException($"Money value '{value}' exceeds scale 4.");
+            throw new InvalidMoneyException($"El valor monetario '{value}' excede la escala 4.");
         }
 
         return new Money(value);

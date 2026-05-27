@@ -38,10 +38,9 @@ public sealed class CatalogProblemDetailsFactory
             Instance = instance
         };
 
-        if (_hostEnvironment.IsDevelopment())
-        {
-            problemDetails.Detail = exception.Message;
-        }
+        problemDetails.Detail = _hostEnvironment.IsDevelopment()
+            ? exception.Message
+            : MapPublicDetail(exception);
 
         problemDetails.Extensions["traceId"] = correlationId;
         problemDetails.Extensions["correlationId"] = correlationId;
@@ -62,15 +61,31 @@ public sealed class CatalogProblemDetailsFactory
     {
         return exception switch
         {
-            ValidationException => (StatusCodes.Status400BadRequest, "Validation failed"),
-            NotFoundException => (StatusCodes.Status404NotFound, "Product not found"),
-            ConflictException => (StatusCodes.Status409Conflict, "Conflict detected"),
-            InvalidPriceException => (StatusCodes.Status422UnprocessableEntity, "Invalid price"),
-            InvalidProductNameException => (StatusCodes.Status422UnprocessableEntity, "Invalid product name"),
-            InvalidSkuException => (StatusCodes.Status422UnprocessableEntity, "Invalid sku"),
-            InvalidStockException => (StatusCodes.Status422UnprocessableEntity, "Invalid stock"),
-            DomainException => (StatusCodes.Status422UnprocessableEntity, "Business rule violation"),
-            _ => (StatusCodes.Status500InternalServerError, "Unexpected error")
+            ValidationException => (StatusCodes.Status400BadRequest, "Validacion fallida"),
+            NotFoundException => (StatusCodes.Status404NotFound, "Producto no encontrado"),
+            ConflictException => (StatusCodes.Status409Conflict, "Conflicto detectado"),
+            InvalidPriceException => (StatusCodes.Status422UnprocessableEntity, "Precio invalido"),
+            InvalidProductNameException => (StatusCodes.Status422UnprocessableEntity, "Nombre de producto invalido"),
+            InvalidSkuException => (StatusCodes.Status422UnprocessableEntity, "SKU invalido"),
+            InvalidStockException => (StatusCodes.Status422UnprocessableEntity, "Stock invalido"),
+            DomainException => (StatusCodes.Status422UnprocessableEntity, "Regla de negocio incumplida"),
+            _ => (StatusCodes.Status500InternalServerError, "Error inesperado")
+        };
+    }
+
+    private static string MapPublicDetail(Exception exception)
+    {
+        return exception switch
+        {
+            ValidationException => "Revisa los datos enviados y corrige los campos resaltados.",
+            NotFoundException => "No se encontro el producto solicitado.",
+            ConflictException => "La solicitud entra en conflicto con el estado actual del catalogo.",
+            InvalidPriceException => "El precio de venta debe ser mayor o igual al costo.",
+            InvalidProductNameException => "El nombre del producto debe tener entre 3 y 200 caracteres.",
+            InvalidSkuException => "El SKU debe tener entre 3 y 50 caracteres validos, letras, numeros o guiones.",
+            InvalidStockException => "El stock no puede ser negativo.",
+            DomainException => "La solicitud incumple una regla de negocio.",
+            _ => "Ocurrio un error inesperado al procesar la solicitud."
         };
     }
 }

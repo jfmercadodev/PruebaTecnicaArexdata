@@ -1,4 +1,5 @@
 using FluentValidation;
+using ProductCatalog.Domain.ValueObjects;
 
 namespace ProductCatalog.Application.Products.Commands.UpdateProduct;
 
@@ -11,11 +12,11 @@ public sealed class UpdateProductCommandValidator : AbstractValidator<UpdateProd
 
         RuleFor(command => command)
             .Must(HaveAtLeastOneChange)
-            .WithMessage("Update request must include price/cost and/or stock delta.");
+            .WithMessage("La solicitud de actualizacion debe incluir nombre, SKU, precio/costo y/o delta de stock.");
 
         RuleFor(command => command)
             .Must(HaveCompletePricePair)
-            .WithMessage("SalePrice and Cost must be sent together.");
+            .WithMessage("SalePrice y Cost deben enviarse juntos.");
 
         When(command => command.SalePrice.HasValue, () =>
         {
@@ -28,15 +29,49 @@ public sealed class UpdateProductCommandValidator : AbstractValidator<UpdateProd
             RuleFor(command => command.Cost!.Value)
                 .GreaterThan(0);
         });
+
+        When(command => command.Name is not null, () =>
+        {
+            RuleFor(command => command.Name!)
+                .NotEmpty()
+                .Length(3, 200);
+        });
+
+        When(command => command.Sku is not null, () =>
+        {
+            RuleFor(command => command.Sku!)
+                .Cascade(CascadeMode.Stop)
+                .NotEmpty()
+                .Must(BeValidSku)
+                .WithMessage("El formato del SKU es invalido.")
+                .Length(3, 50);
+        });
     }
 
     private static bool HaveAtLeastOneChange(UpdateProductCommand command)
     {
-        return command.StockDelta.HasValue || command.SalePrice.HasValue || command.Cost.HasValue;
+        return command.Name is not null
+            || command.Sku is not null
+            || command.StockDelta.HasValue
+            || command.SalePrice.HasValue
+            || command.Cost.HasValue;
     }
 
     private static bool HaveCompletePricePair(UpdateProductCommand command)
     {
         return command.SalePrice.HasValue == command.Cost.HasValue;
+    }
+
+    private static bool BeValidSku(string sku)
+    {
+        try
+        {
+            Sku.Create(sku);
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
     }
 }

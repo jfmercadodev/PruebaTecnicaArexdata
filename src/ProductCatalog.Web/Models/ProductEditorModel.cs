@@ -5,18 +5,18 @@ namespace ProductCatalog.Web.Models;
 
 public sealed class ProductEditorModel : IValidatableObject
 {
-    [Required(ErrorMessage = "Product name is required.")]
-    [StringLength(200, MinimumLength = 3, ErrorMessage = "Product name must be between 3 and 200 characters.")]
+    [Required(ErrorMessage = "El nombre del producto es obligatorio.")]
+    [StringLength(200, MinimumLength = 3, ErrorMessage = "El nombre del producto debe tener entre 3 y 200 caracteres.")]
     public string Name { get; set; } = string.Empty;
 
-    [Required(ErrorMessage = "SKU is required.")]
+    [Required(ErrorMessage = "El SKU es obligatorio.")]
     public string Sku { get; set; } = string.Empty;
 
     public decimal SalePrice { get; set; }
 
     public decimal Cost { get; set; }
 
-    [Range(0, int.MaxValue, ErrorMessage = "Stock cannot be negative.")]
+    [Range(0, int.MaxValue, ErrorMessage = "El stock no puede ser negativo.")]
     public int Stock { get; set; }
 
     public static ProductEditorModel FromProduct(ProductDto product)
@@ -36,14 +36,14 @@ public sealed class ProductEditorModel : IValidatableObject
         if (SalePrice <= 0)
         {
             yield return new ValidationResult(
-                "Sale price must be greater than zero.",
+                "El precio de venta debe ser mayor que cero.",
                 [nameof(SalePrice)]);
         }
 
         if (Cost <= 0)
         {
             yield return new ValidationResult(
-                "Cost must be greater than zero.",
+                "El costo debe ser mayor que cero.",
                 [nameof(Cost)]);
         }
     }

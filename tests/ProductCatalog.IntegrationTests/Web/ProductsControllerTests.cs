@@ -33,7 +33,7 @@ public sealed class ProductsControllerTests
 
         response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
         response.Content.Headers.ContentType!.MediaType.Should().Be("application/problem+json");
-        problemDetails!.Title.Should().Contain("Invalid price");
+        problemDetails!.Title.Should().Contain("Precio invalido");
     }
 
     [Fact]
@@ -64,7 +64,7 @@ public sealed class ProductsControllerTests
         var problemDetails = await response.Content.ReadFromJsonAsync<ProblemDetails>();
 
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
-        problemDetails!.Title.Should().Contain("Product not found");
+        problemDetails!.Title.Should().Contain("Producto no encontrado");
     }
 
     [Fact]
@@ -88,7 +88,7 @@ public sealed class ProductsControllerTests
 
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
         response.Content.Headers.ContentType!.MediaType.Should().Be("application/problem+json");
-        problemDetails!.Title.Should().Contain("Validation failed");
+        problemDetails!.Title.Should().Contain("Validacion fallida");
     }
 
     [Fact]
@@ -150,6 +150,8 @@ public sealed class ProductsControllerTests
         {
             Content = JsonContent.Create(new
             {
+                Name = "API Updated Product",
+                Sku = "API-CRUD-002",
                 SalePrice = 180m,
                 Cost = 120m,
                 StockDelta = 4
@@ -160,6 +162,8 @@ public sealed class ProductsControllerTests
         var updated = await updateResponse.Content.ReadFromJsonAsync<ProductDto>();
 
         updateResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        updated!.Name.Should().Be("API Updated Product");
+        updated.Sku.Should().Be("API-CRUD-002");
         updated!.SalePrice.Should().Be(180m);
         updated.Stock.Should().Be(10);
 

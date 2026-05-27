@@ -20,7 +20,7 @@ public sealed class GetProductByIdQueryHandler : IRequestHandler<GetProductByIdQ
     public async Task<ProductDto> Handle(GetProductByIdQuery request, CancellationToken cancellationToken)
     {
         var product = await _productReadRepository.FindByIdAsync(request.ProductId, cancellationToken)
-            ?? throw new NotFoundException($"Product '{request.ProductId}' was not found.");
+            ?? throw new NotFoundException($"No se encontro el producto '{request.ProductId}'.");
 
         return _mapper.Map<ProductDto>(product);
     }

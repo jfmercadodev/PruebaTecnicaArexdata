@@ -39,7 +39,7 @@ public sealed class CachingBehaviorTests
 
         response.Value.Should().Be("fresh");
         response.Metadata!.CacheHit.Should().BeFalse();
-        response.Metadata.Source.Should().Be("Database");
+        response.Metadata.Source.Should().Be("Base de datos");
         (await cache.GetAsync<FakeCacheResponse>("products:key", CancellationToken.None))!.Value.Should().Be("fresh");
     }
 

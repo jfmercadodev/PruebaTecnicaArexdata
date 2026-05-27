@@ -54,7 +54,7 @@ public sealed class ProductCreationFeatureTests
         var payload = await response.Content.ReadAsStringAsync();
 
         Assert.Equal(HttpStatusCode.UnprocessableEntity, response.StatusCode);
-        Assert.Contains("Invalid price", payload, StringComparison.Ordinal);
+        Assert.Contains("Precio invalido", payload, StringComparison.Ordinal);
     }
 
     [Fact(DisplayName = "BDD-003 Reject duplicate sku")]
@@ -89,7 +89,7 @@ public sealed class ProductCreationFeatureTests
         var payload = await duplicateResponse.Content.ReadAsStringAsync();
 
         Assert.Equal(HttpStatusCode.Conflict, duplicateResponse.StatusCode);
-        Assert.Contains("Conflict detected", payload, StringComparison.Ordinal);
+        Assert.Contains("Conflicto detectado", payload, StringComparison.Ordinal);
     }
 
     [Fact(DisplayName = "BDD-004 Reuse idempotent response")]

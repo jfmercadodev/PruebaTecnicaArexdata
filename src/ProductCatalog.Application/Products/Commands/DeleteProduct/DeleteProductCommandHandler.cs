@@ -36,7 +36,7 @@ public sealed class DeleteProductCommandHandler : IRequestHandler<DeleteProductC
         }
 
         var product = await _productWriteRepository.FindByIdAsync(request.ProductId, cancellationToken)
-            ?? throw new NotFoundException($"Product '{request.ProductId}' was not found.");
+            ?? throw new NotFoundException($"No se encontro el producto '{request.ProductId}'.");
 
         _productWriteRepository.Delete(product);
         await _unitOfWork.SaveChangesAsync(cancellationToken);

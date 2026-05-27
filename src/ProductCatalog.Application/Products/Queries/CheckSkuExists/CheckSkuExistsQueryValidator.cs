@@ -11,7 +11,7 @@ public sealed class CheckSkuExistsQueryValidator : AbstractValidator<CheckSkuExi
             .Cascade(CascadeMode.Stop)
             .NotEmpty()
             .Must(BeValidSku)
-            .WithMessage("SKU format is invalid.");
+            .WithMessage("El formato del SKU es invalido.");
     }
 
     private static bool BeValidSku(string sku)

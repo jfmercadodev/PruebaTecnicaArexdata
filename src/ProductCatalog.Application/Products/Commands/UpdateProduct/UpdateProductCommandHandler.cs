@@ -4,11 +4,13 @@ using ProductCatalog.Application.Common.Exceptions;
 using ProductCatalog.Application.Common.Interfaces;
 using ProductCatalog.Application.Products.Dtos;
 using ProductCatalog.Application.Products.Interfaces;
+using ProductCatalog.Domain.ValueObjects;
 
 namespace ProductCatalog.Application.Products.Commands.UpdateProduct;
 
 public sealed class UpdateProductCommandHandler : IRequestHandler<UpdateProductCommand, ProductDto>
 {
+    private readonly IProductReadRepository _productReadRepository;
     private readonly IProductWriteRepository _productWriteRepository;
     private readonly IUnitOfWork _unitOfWork;
     private readonly IDomainEventPublisher _domainEventPublisher;
@@ -17,6 +19,7 @@ public sealed class UpdateProductCommandHandler : IRequestHandler<UpdateProductC
     private readonly IMapper _mapper;
 
     public UpdateProductCommandHandler(
+        IProductReadRepository productReadRepository,
         IProductWriteRepository productWriteRepository,
         IUnitOfWork unitOfWork,
         IDomainEventPublisher domainEventPublisher,
@@ -24,6 +27,7 @@ public sealed class UpdateProductCommandHandler : IRequestHandler<UpdateProductC
         ICacheInvalidationService cacheInvalidationService,
         IMapper mapper)
     {
+        _productReadRepository = productReadRepository;
         _productWriteRepository = productWriteRepository;
         _unitOfWork = unitOfWork;
         _domainEventPublisher = domainEventPublisher;
@@ -44,10 +48,30 @@ public sealed class UpdateProductCommandHandler : IRequestHandler<UpdateProductC
         }
 
         var product = await _productWriteRepository.FindByIdAsync(request.ProductId, cancellationToken)
-            ?? throw new NotFoundException($"Product '{request.ProductId}' was not found.");
+            ?? throw new NotFoundException($"No se encontro el producto '{request.ProductId}'.");
+
+        Sku? newSku = null;
+        if (request.Sku is not null)
+        {
+            newSku = Sku.Create(request.Sku);
+            if (newSku != product.Sku && await _productReadRepository.ExistsBySkuAsync(newSku, cancellationToken))
+            {
+                throw new ConflictException($"Ya existe un producto con el SKU '{newSku.Value}'.");
+            }
+        }
 
         product.ExecuteAtomic(candidate =>
         {
+            if (request.Name is not null)
+            {
+                candidate.Rename(request.Name);
+            }
+
+            if (newSku is not null)
+            {
+                candidate.ChangeSku(newSku);
+            }
+
             if (request.SalePrice.HasValue && request.Cost.HasValue)
             {
                 candidate.UpdatePrice(request.SalePrice.Value, request.Cost.Value);

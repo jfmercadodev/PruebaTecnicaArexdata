@@ -10,7 +10,7 @@ public sealed class UpdateProductCommandValidatorTests
         var validator = new UpdateProductCommandValidator();
 
         var result = await validator.ValidateAsync(
-            new UpdateProductCommand(Guid.NewGuid(), null, null, null));
+            new UpdateProductCommand(Guid.NewGuid(), null, null, null, null, null));
 
         result.IsValid.Should().BeFalse();
     }
@@ -21,8 +21,19 @@ public sealed class UpdateProductCommandValidatorTests
         var validator = new UpdateProductCommandValidator();
 
         var result = await validator.ValidateAsync(
-            new UpdateProductCommand(Guid.NewGuid(), 135m, null, null));
+            new UpdateProductCommand(Guid.NewGuid(), null, null, 135m, null, null));
 
         result.IsValid.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task ValidateAsync_ShouldPass_WhenOnlyNameWasProvided()
+    {
+        var validator = new UpdateProductCommandValidator();
+
+        var result = await validator.ValidateAsync(
+            new UpdateProductCommand(Guid.NewGuid(), "Nuevo nombre", null, null, null, null));
+
+        result.IsValid.Should().BeTrue();
     }
 }

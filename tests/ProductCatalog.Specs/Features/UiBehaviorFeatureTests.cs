@@ -47,7 +47,7 @@ public sealed class UiBehaviorFeatureTests
         cut.Find("#stock").Change("15");
 
         cut.WaitForAssertion(
-            () => Assert.Contains("SKU already exists.", cut.Markup),
+            () => Assert.Contains("El SKU ya existe.", cut.Markup),
             TimeSpan.FromSeconds(2));
 
         Assert.True(cut.Find("button[type=submit]").HasAttribute("disabled"));
@@ -67,7 +67,7 @@ public sealed class UiBehaviorFeatureTests
             () => Assert.Contains("boom-dev", cut.Markup),
             TimeSpan.FromSeconds(1));
 
-        Assert.Contains("Screen failed", cut.Markup);
+        Assert.Contains("La pantalla fallo", cut.Markup);
         Assert.Contains("System.InvalidOperationException", cut.Markup);
     }
 
@@ -87,10 +87,10 @@ public sealed class UiBehaviorFeatureTests
                 parameters.Add(boundary => boundary.ChildContent, ThrowingFragment("boom-prod")));
 
             cut.WaitForAssertion(
-                () => Assert.Contains("Something broke while rendering this screen.", cut.Markup),
+                () => Assert.Contains("Ocurrio un error al renderizar esta pantalla.", cut.Markup),
                 TimeSpan.FromSeconds(1));
 
-            Assert.Contains("Correlation:", cut.Markup);
+            Assert.Contains("ID de correlacion:", cut.Markup);
             Assert.DoesNotContain("boom-prod", cut.Markup);
         }
         finally
