@@ -60,6 +60,15 @@ Prerequisite: Docker Desktop with `docker compose`.
 docker compose up --build
 ```
 
+If you already pulled SQL Server image and Docker Desktop keeps trying remote metadata again, force local reuse:
+
+```powershell
+$env:SQL_SERVER_IMAGE="productcatalog-sqlserver-local:2022"
+$env:SQL_SERVER_PULL_POLICY="never"
+docker tag mcr.microsoft.com/mssql/server:2022-latest productcatalog-sqlserver-local:2022
+docker compose up --build
+```
+
 3. Open:
 
 - UI: `http://localhost:8080/products`
@@ -109,6 +118,7 @@ powershell -ExecutionPolicy Bypass -File .\scripts\validate-docker.ps1
 ```
 
 `validate-docker.ps1` intenta encontrar `docker.exe` aunque Docker Desktop no este en `PATH`.
+Tambien intenta reutilizar una imagen local de SQL Server con alias `productcatalog-sqlserver-local:2022` para evitar pulls innecesarios cuando ya fue descargada.
 
 ## Quality status
 

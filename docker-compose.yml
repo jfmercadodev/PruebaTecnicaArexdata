@@ -1,6 +1,7 @@
 services:
   sqlserver:
-    image: mcr.microsoft.com/mssql/server:2022-latest
+    image: ${SQL_SERVER_IMAGE:-mcr.microsoft.com/mssql/server:2022-latest}
+    pull_policy: ${SQL_SERVER_PULL_POLICY:-missing}
     container_name: productcatalog-sqlserver
     environment:
       ACCEPT_EULA: "Y"

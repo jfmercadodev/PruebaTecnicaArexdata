@@ -51,6 +51,20 @@ if ($LASTEXITCODE -ne 0) {
 
 $appPort = if ($env:APP_PORT) { $env:APP_PORT } else { "8080" }
 $appUrl = "http://localhost:$appPort/products"
+$defaultSqlServerImage = "mcr.microsoft.com/mssql/server:2022-latest"
+$localSqlServerImage = "productcatalog-sqlserver-local:2022"
+
+if (-not $env:SQL_SERVER_IMAGE) {
+    $null = & $dockerCli image inspect $defaultSqlServerImage *> $null
+    if ($LASTEXITCODE -eq 0) {
+        $null = & $dockerCli image tag $defaultSqlServerImage $localSqlServerImage 2>$null
+        if ($LASTEXITCODE -eq 0) {
+            $env:SQL_SERVER_IMAGE = $localSqlServerImage
+            $env:SQL_SERVER_PULL_POLICY = "never"
+            Write-Host ">> using local SQL Server image alias $localSqlServerImage" -ForegroundColor Cyan
+        }
+    }
+}
 
 Write-Host ">> docker compose up -d --build" -ForegroundColor Cyan
 $previousErrorActionPreference = $ErrorActionPreference
